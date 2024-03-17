@@ -61,6 +61,7 @@
 #include "internal.h"
 
 void print_str_guest(char* str);
+void print_hex_guest(uint64_t val);
 
 int console_printk[4] = {
 	CONSOLE_LOGLEVEL_DEFAULT,	/* console_loglevel */
@@ -2124,7 +2125,8 @@ static u16 printk_sprint(char *text, u16 size, int facility,
 
 	text_len = vscnprintf(text, size, fmt, args);
 
-	print_str_guest(text);
+	// for debug only, need to start console ASAP - wheatfox
+	// print_str_guest(text);
 
 	/* Mark and strip a trailing newline. */
 	if (text_len && text[text_len - 1] == '\n') {
@@ -2268,7 +2270,7 @@ asmlinkage int vprintk_emit(int facility, int level,
 			    const struct dev_printk_info *dev_info,
 			    const char *fmt, va_list args)
 {
-	// print_str_guest("[wheatfox] (vprintk_emit) facility: ");
+	// print_str_guest("[WHEATFOX] (vprintk_emit) facility: ");
 	// print_hex_guest(facility);
 	// print_str_guest(", level: ");
 	// print_hex_guest(level);
@@ -3433,6 +3435,9 @@ static int unregister_console_locked(struct console *console);
  */
 void register_console(struct console *newcon)
 {
+	print_str_guest("[WHEATFOX] (register_console) newcon->name: ");
+	print_str_guest(newcon->name);
+	print_str_guest("\n");
 	struct console *con;
 	bool bootcon_registered = false;
 	bool realcon_registered = false;
@@ -3441,15 +3446,22 @@ void register_console(struct console *newcon)
 	console_list_lock();
 
 	for_each_console(con) {
+		print_str_guest("[WHEATFOX] (register_console) con->name: ");
+		print_str_guest(con->name);
+		print_str_guest("\n");
 		if (WARN(con == newcon, "console '%s%d' already registered\n",
 					 con->name, con->index)) {
 			goto unlock;
 		}
 
-		if (con->flags & CON_BOOT)
+		if (con->flags & CON_BOOT) {
 			bootcon_registered = true;
-		else
+			print_str_guest("[WHEATFOX] (register_console) bootcon_registered = true\n");
+		}
+		else {
 			realcon_registered = true;
+			print_str_guest("[WHEATFOX] (register_console) realcon_registered = true\n");
+		}
 	}
 
 	/* Do not register boot consoles when there already is a real one. */
@@ -3493,6 +3505,10 @@ void register_console(struct console *newcon)
 	/* If not, try to match against the platform default(s) */
 	if (err == -ENOENT)
 		err = try_enable_preferred_console(newcon, false);
+
+	print_str_guest("[WHEATFOX] (register_console) err: ");
+	print_hex_guest(err);
+	print_str_guest("\n");
 
 	/* printk() messages are not printed to the Braille console. */
 	if (err || newcon->flags & CON_BRL) {
@@ -3563,6 +3579,7 @@ void register_console(struct console *newcon)
 		}
 	}
 unlock:
+	print_str_guest("[WHEATFOX] (register_console) at unlock\n");
 	console_list_unlock();
 }
 EXPORT_SYMBOL(register_console);
@@ -3681,6 +3698,7 @@ EXPORT_SYMBOL(console_force_preferred_locked);
  */
 void __init console_init(void)
 {
+	print_str_guest("[WHEATFOX] (console_init) start\n");
 	int ret;
 	initcall_t call;
 	initcall_entry_t *ce;
@@ -3688,15 +3706,28 @@ void __init console_init(void)
 	/* Setup the default TTY line discipline. */
 	n_tty_init();
 
+	print_str_guest("[WHEATFOX] (console_init) finished n_tty_init\n");
+
 	/*
 	 * set up the console device so that later boot sequences can
 	 * inform about problems etc..
 	 */
+	// print __con_initcall_start and __con_initcall_end
+	print_str_guest("[WHEATFOX] (console_init) __con_initcall_start: ");
+	print_hex_guest((unsigned long)__con_initcall_start);
+	print_str_guest("\n");
+	print_str_guest("[WHEATFOX] (console_init) __con_initcall_end: ");
+	print_hex_guest((unsigned long)__con_initcall_end);
+	print_str_guest("\n");
 	ce = __con_initcall_start;
 	trace_initcall_level("console");
 	while (ce < __con_initcall_end) {
 		call = initcall_from_entry(ce);
 		trace_initcall_start(call);
+		// print call addr
+		print_str_guest("[WHEATFOX] (console_init) call's function addr: ");
+		print_hex_guest((unsigned long)call);
+		print_str_guest("\n");
 		ret = call();
 		trace_initcall_finish(call, ret);
 		ce++;

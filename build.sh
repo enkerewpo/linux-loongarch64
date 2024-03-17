@@ -47,8 +47,10 @@ fi
 if [ "$1" = "kernel" ]; then
     echo "Building kernel"
     make $ARGS -j$NUM_JOBS
-    # objdump the asm of vmlinux
-    loongarch64-unknown-linux-gnu-objdump -d vmlinux > vmlinux.asm
+    # objdump the asm of vmlinux, dump all sections' data
+    loongarch64-unknown-linux-gnu-objdump -D vmlinux > vmlinux.asm
+    # readelf
+    loongarch64-unknown-linux-gnu-readelf -a vmlinux > vmlinux.readelf.txt
     exit 0
 fi
 

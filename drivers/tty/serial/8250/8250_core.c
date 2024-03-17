@@ -708,13 +708,30 @@ static struct console univ8250_console = {
 	.data		= &serial8250_reg,
 };
 
+void print_str_guest(char* str);
+void print_hex_guest(uint64_t val);
+
 static int __init univ8250_console_init(void)
 {
+	print_str_guest("[WHEATFOX] (univ8250_console_init) start\n");
+	print_str_guest("[WHEATFOX] (univ8250_console_init) serial8250_reg.driver_name: ");
+	print_str_guest(serial8250_reg.driver_name);
+	print_str_guest("\n");
+	print_str_guest("[WHEATFOX] (univ8250_console_init) serial8250_reg.dev_name: ");
+	print_str_guest(serial8250_reg.dev_name);
+	print_str_guest("\n");
+	// print nr_uart
+	print_str_guest("[WHEATFOX] (univ8250_console_init) nr_uarts: ");
+	print_hex_guest(nr_uarts);
+	print_str_guest("\n");
 	if (nr_uarts == 0)
 		return -ENODEV;
 
 	serial8250_isa_init_ports();
+	print_str_guest("[WHEATFOX] (univ8250_console_init) serial8250_isa_init_ports done\n");
+
 	register_console(&univ8250_console);
+	print_str_guest("[WHEATFOX] (univ8250_console_init) end\n");
 	return 0;
 }
 console_initcall(univ8250_console_init);

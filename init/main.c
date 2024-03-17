@@ -111,6 +111,29 @@
 
 #include <kunit/test.h>
 
+void print_char(char c);
+void init_serial(void);
+
+void print_str_guest(char *str) {
+  while (*str) {
+    print_char(*str);
+    if (*str == '\n') {
+      print_char('\r');
+    }
+    str++;
+  }
+}
+
+void print_hex_guest(uint64_t val) {
+  char buf[17];
+  buf[16] = '\0';
+  for (int i = 0; i < 16; i++) {
+    buf[15 - i] = "0123456789ABCDEF"[(val >> (i * 4)) & 0xF];
+  }
+  print_str_guest("0x");
+  print_str_guest(buf);
+}
+
 static int kernel_init(void *);
 
 /*
@@ -686,6 +709,8 @@ noinline void __ref __noreturn rest_init(void)
 	struct task_struct *tsk;
 	int pid;
 
+	print_str_guest("[WHEATFOX] (rest_init) start\n");
+
 	rcu_scheduler_starting();
 	/*
 	 * We need to spawn init first so that it obtains pid 1, however
@@ -693,6 +718,11 @@ noinline void __ref __noreturn rest_init(void)
 	 * we schedule it before we create kthreadd, will OOPS.
 	 */
 	pid = user_mode_thread(kernel_init, NULL, CLONE_FS);
+
+	print_str_guest("[WHEATFOX] (rest_init) user_mode_thread ok, pid: ");
+	print_hex_guest(pid);
+	print_str_guest("\n");
+
 	/*
 	 * Pin init on the boot CPU. Task migration is not properly working
 	 * until sched_init_smp() has been run. It will set the allowed
@@ -720,6 +750,8 @@ noinline void __ref __noreturn rest_init(void)
 	system_state = SYSTEM_SCHEDULING;
 
 	complete(&kthreadd_done);
+
+	print_str_guest("[WHEATFOX] (rest_init) complete\n");
 
 	/*
 	 * The boot idle thread must execute schedule()
@@ -824,6 +856,7 @@ early_param("randomize_kstack_offset", early_randomize_kstack_offset);
 
 void __init __weak __noreturn arch_call_rest_init(void)
 {
+	print_str_guest("[WHEATFOX] (arch_call_rest_init) start\n");
 	rest_init();
 }
 
@@ -870,36 +903,13 @@ static void __init print_unknown_bootoptions(void)
 	memblock_free(unknown_options, len);
 }
 
-void print_char(char c);
-void init_serial(void);
-
-void print_str_guest(char *str) {
-  while (*str) {
-    print_char(*str);
-    if (*str == '\n') {
-      print_char('\r');
-    }
-    str++;
-  }
-}
-
-void print_hex_guest(uint64_t val) {
-  char buf[17];
-  buf[16] = '\0';
-  for (int i = 0; i < 16; i++) {
-    buf[15 - i] = "0123456789ABCDEF"[(val >> (i * 4)) & 0xF];
-  }
-  print_str_guest("0x");
-  print_str_guest(buf);
-}
-
 asmlinkage __visible __init __no_sanitize_address __noreturn __no_stack_protector
 void start_kernel(void)
 {
 	init_serial();
-	print_str_guest("[wheatfox] (start_kernel) start\n");
+	print_str_guest("[WHEATFOX] (start_kernel) start\n");
 
-	pr_info("[wheatfox] test printk\n");
+	pr_info("[WHEATFOX] test printk\n");
 
 	char *command_line;
 	char *after_dashes;
@@ -907,11 +917,11 @@ void start_kernel(void)
 	set_task_stack_end_magic(&init_task);
 	smp_setup_processor_id();
 
-	print_str_guest("[wheatfox] (start_kernel) smp_setup_processor_id finished\n");
+	print_str_guest("[WHEATFOX] (start_kernel) smp_setup_processor_id finished\n");
 
 	debug_objects_early_init();
 
-	print_str_guest("[wheatfox] (start_kernel) debug_objects_early_init finished\n");
+	print_str_guest("[WHEATFOX] (start_kernel) debug_objects_early_init finished\n");
 
 	init_vmlinux_build_id();
 
@@ -929,12 +939,12 @@ void start_kernel(void)
 	pr_notice("%s", linux_banner);
 	early_security_init();
 
-	print_str_guest("[wheatfox] (start_kernel) early_security_init finished\n");
+	print_str_guest("[WHEATFOX] (start_kernel) early_security_init finished\n");
 
 	setup_arch(&command_line);
 	setup_boot_config();
 
-	print_str_guest("[wheatfox] (start_kernel) setup_boot_config finished\n");
+	print_str_guest("[WHEATFOX] (start_kernel) setup_boot_config finished\n");
 
 	setup_command_line(command_line);
 
@@ -943,7 +953,7 @@ void start_kernel(void)
 	smp_prepare_boot_cpu();	/* arch-specific boot-cpu hooks */
 	boot_cpu_hotplug_init();
 
-	print_str_guest("[wheatfox] (start_kernel) boot_cpu_hotplug_init finished\n");
+	print_str_guest("[WHEATFOX] (start_kernel) boot_cpu_hotplug_init finished\n");
 
 	pr_notice("Kernel command line: %s\n", saved_command_line);
 	/* parameters may set static keys */
@@ -964,7 +974,7 @@ void start_kernel(void)
 	/* Architectural and non-timekeeping rng init, before allocator init */
 	random_init_early(command_line);
 
-	print_str_guest("[wheatfox] (start_kernel) random_init_early finished\n");
+	print_str_guest("[WHEATFOX] (start_kernel) random_init_early finished\n");
 
 	/*
 	 * These use large bootmem allocations and must precede
@@ -978,7 +988,7 @@ void start_kernel(void)
 	poking_init();
 	ftrace_init();
 
-	print_str_guest("[wheatfox] (start_kernel) ftrace_init finished\n");
+	print_str_guest("[WHEATFOX] (start_kernel) ftrace_init finished\n");
 
 	/* trace_printk can be enabled here */
 	early_trace_init();
@@ -996,7 +1006,7 @@ void start_kernel(void)
 	radix_tree_init();
 	maple_tree_init();
 
-	print_str_guest("[wheatfox] (start_kernel) maple_tree_init finished\n");
+	print_str_guest("[WHEATFOX] (start_kernel) maple_tree_init finished\n");
 
 	/*
 	 * Set up housekeeping before setting up workqueues to allow the unbound
@@ -1016,7 +1026,7 @@ void start_kernel(void)
 	/* Trace events are available after this */
 	trace_init();
 
-	print_str_guest("[wheatfox] (start_kernel) trace_init finished\n");
+	print_str_guest("[WHEATFOX] (start_kernel) trace_init finished\n");
 
 	if (initcall_debug)
 		initcall_debug_enable();
@@ -1034,7 +1044,7 @@ void start_kernel(void)
 	timekeeping_init();
 	time_init();
 
-	print_str_guest("[wheatfox] (start_kernel) time_init finished\n");
+	print_str_guest("[WHEATFOX] (start_kernel) time_init finished\n");
 
 	/* This must be after timekeeping is initialized */
 	random_init();
@@ -1051,7 +1061,7 @@ void start_kernel(void)
 	early_boot_irqs_disabled = false;
 	local_irq_enable();
 
-	print_str_guest("[wheatfox] (start_kernel) local_irq_enable finished\n");
+	print_str_guest("[WHEATFOX] (start_kernel) local_irq_enable finished\n");
 
 	kmem_cache_init_late();
 
@@ -1060,9 +1070,9 @@ void start_kernel(void)
 	 * we've done PCI setups etc, and console_init() must be aware of
 	 * this. But we do want output early, in case something goes wrong.
 	 */
-	print_str_guest("[wheatfox] (start_kernel) console_init\n");
+	print_str_guest("[WHEATFOX] (start_kernel) console_init\n");
 	console_init();
-	print_str_guest("[wheatfox] (start_kernel) console_init finished\n");
+	print_str_guest("[WHEATFOX] (start_kernel) console_init finished\n");
 
 	if (panic_later)
 		panic("Too many boot %s vars at `%s'", panic_later,
@@ -1077,6 +1087,8 @@ void start_kernel(void)
 	 */
 	locking_selftest();
 
+	print_str_guest("[WHEATFOX] (start_kernel) locking_selftest finished\n");
+
 #ifdef CONFIG_BLK_DEV_INITRD
 	if (initrd_start && !initrd_below_start_ok &&
 	    page_to_pfn(virt_to_page((void *)initrd_start)) < min_low_pfn) {
@@ -1089,10 +1101,15 @@ void start_kernel(void)
 	setup_per_cpu_pageset();
 	numa_policy_init();
 	acpi_early_init();
+
+	print_str_guest("[WHEATFOX] (start_kernel) acpi_early_init finished\n");
+
 	if (late_time_init)
 		late_time_init();
 	sched_clock_init();
 	calibrate_delay();
+
+	print_str_guest("[WHEATFOX] (start_kernel) calibrate_delay finished\n");
 
 	arch_cpu_finalize_init();
 
@@ -1105,6 +1122,9 @@ void start_kernel(void)
 	thread_stack_cache_init();
 	cred_init();
 	fork_init();
+
+
+
 	proc_caches_init();
 	uts_ns_init();
 	key_init();
@@ -1114,6 +1134,9 @@ void start_kernel(void)
 	vfs_caches_init();
 	pagecache_init();
 	signals_init();
+
+	print_str_guest("[WHEATFOX] (start_kernel) signals_init finished\n");
+
 	seq_file_init();
 	proc_root_init();
 	nsfs_init();
@@ -1122,9 +1145,13 @@ void start_kernel(void)
 	taskstats_init_early();
 	delayacct_init();
 
+	print_str_guest("[WHEATFOX] (start_kernel) delayacct_init finished\n");
+
 	acpi_subsystem_init();
 	arch_post_acpi_subsys_init();
 	kcsan_init();
+
+	print_str_guest("[WHEATFOX] (start_kernel) kcsan_init finished\n");
 
 	/* Do the rest non-__init'ed, we're now alive */
 	arch_call_rest_init();
@@ -1489,6 +1516,7 @@ void __weak free_initmem(void)
 
 static int __ref kernel_init(void *unused)
 {
+	print_str_guest("[WHEATFOX] (kernel_init) start\n");
 	int ret;
 
 	/*
@@ -1508,6 +1536,8 @@ static int __ref kernel_init(void *unused)
 	free_initmem();
 	mark_readonly();
 
+	print_str_guest("[WHEATFOX] (kernel_init) free_initmem finished\n");
+
 	/*
 	 * Kernel mappings are now finalized - update the userspace page-table
 	 * to finalize PTI.
@@ -1520,6 +1550,8 @@ static int __ref kernel_init(void *unused)
 	rcu_end_inkernel_boot();
 
 	do_sysctl_args();
+
+	print_str_guest("[WHEATFOX] (kernel_init) do_sysctl_args finished\n");
 
 	if (ramdisk_execute_command) {
 		ret = run_init_process(ramdisk_execute_command);

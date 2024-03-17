@@ -16,6 +16,8 @@ else
 KBUILD_IMAGE	:= $(boot)/$(image-name-y).efi
 endif
 
+dtb_3a5000 := /home/wheatfox/Documents/Code/loongvisor/dts/loongson3_ls7a.dtb
+
 #
 # Select the object file format to substitute into the linker script.
 #
@@ -43,10 +45,10 @@ endif
 
 ifdef CONFIG_64BIT
 ld-emul			= $(64bit-emul)
-cflags-y		+= -mabi=lp64s
+cflags-y		+= -mabi=lp64d
 endif
 
-cflags-y			+= -pipe -msoft-float
+cflags-y			+= -pipe # -msoft-float
 LDFLAGS_vmlinux			+= -static -n -nostdlib
 
 # When the assembler supports explicit relocation hint, we must use it.
@@ -141,7 +143,11 @@ endif
 
 vdso-install-y += arch/loongarch/vdso/vdso.so.dbg
 
-all:	$(notdir $(KBUILD_IMAGE))
+dtb:
+# always build kernel/fdt.S to fdt.o!
+	$(CROSS_COMPILE)as -o arch/loongarch/kernel/fdt.o arch/loongarch/kernel/fdt.S
+
+all: dtb $(notdir $(KBUILD_IMAGE))
 
 vmlinuz.efi: vmlinux.efi
 
