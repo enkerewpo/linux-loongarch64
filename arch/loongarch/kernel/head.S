@@ -147,3 +147,49 @@ SYM_CODE_END(smpboot_entry)
 #endif /* CONFIG_SMP */
 
 SYM_ENTRY(kernel_entry_end, SYM_L_GLOBAL, SYM_A_NONE)
+
+#define UART_REF_CLK 100000000	//100MHz for 3A5000
+#define UART_DIV_HI	(((UART_REF_CLK + (115200*8)) / (115200*16)) >> 8)
+#define UART_DIV_LO	(((UART_REF_CLK + (115200*8)) / (115200*16)) & 0xff)
+#define CONSOLE_BASE_ADDR 0x1FE001E0
+#define CONSOLE_DMW_ADDR 0x800000001fe001e0
+
+SYM_CODE_START(init_serial)
+    or     a4, ra, zero
+
+	li.d	a0, CONSOLE_DMW_ADDR
+	li.w	a1, 0x80
+	st.b	a1, a0, 3
+
+	li.w	a1, UART_DIV_HI
+	st.b	a1, a0, 1
+	li.w	a1, UART_DIV_LO
+	st.b	a1, a0, 0
+	li.w	a1, 3
+	st.b	a1, a0, 3
+
+	li.w	a1, 71
+	st.b	a1, a0, 2
+
+	or      ra, a4, zero
+	jirl	zero, ra, 0
+SYM_CODE_END(init_serial)
+    
+SYM_CODE_START(print_char)
+	li.d	a1, CONSOLE_DMW_ADDR
+1:
+	ld.bu	a2, a1, 0x5
+	andi	a2, a2, 0x20
+	beqz	a2, 1b
+
+	st.b	a0, a1, 0
+
+	jirl	zero, ra, 0
+SYM_CODE_END(print_char)
+
+// set ax aw
+.section .fdt, "aw", @progbits
+.globl _dtb_start
+_dtb_start:
+	.incbin "/home/wheatfox/Documents/Code/loongvisor/dts/loongson3_ls7a.dtb"
+.globl _dtb_end

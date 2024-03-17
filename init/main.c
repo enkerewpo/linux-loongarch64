@@ -870,15 +870,49 @@ static void __init print_unknown_bootoptions(void)
 	memblock_free(unknown_options, len);
 }
 
+void print_char(char c);
+void init_serial(void);
+
+void print_str_guest(char *str) {
+  while (*str) {
+    print_char(*str);
+    if (*str == '\n') {
+      print_char('\r');
+    }
+    str++;
+  }
+}
+
+void print_hex_guest(uint64_t val) {
+  char buf[17];
+  buf[16] = '\0';
+  for (int i = 0; i < 16; i++) {
+    buf[15 - i] = "0123456789ABCDEF"[(val >> (i * 4)) & 0xF];
+  }
+  print_str_guest("0x");
+  print_str_guest(buf);
+}
+
 asmlinkage __visible __init __no_sanitize_address __noreturn __no_stack_protector
 void start_kernel(void)
 {
+	init_serial();
+	print_str_guest("[wheatfox] (start_kernel) start\n");
+
+	pr_info("[wheatfox] test printk\n");
+
 	char *command_line;
 	char *after_dashes;
 
 	set_task_stack_end_magic(&init_task);
 	smp_setup_processor_id();
+
+	print_str_guest("[wheatfox] (start_kernel) smp_setup_processor_id finished\n");
+
 	debug_objects_early_init();
+
+	print_str_guest("[wheatfox] (start_kernel) debug_objects_early_init finished\n");
+
 	init_vmlinux_build_id();
 
 	cgroup_init_early();
@@ -894,13 +928,22 @@ void start_kernel(void)
 	page_address_init();
 	pr_notice("%s", linux_banner);
 	early_security_init();
+
+	print_str_guest("[wheatfox] (start_kernel) early_security_init finished\n");
+
 	setup_arch(&command_line);
 	setup_boot_config();
+
+	print_str_guest("[wheatfox] (start_kernel) setup_boot_config finished\n");
+
 	setup_command_line(command_line);
+
 	setup_nr_cpu_ids();
 	setup_per_cpu_areas();
 	smp_prepare_boot_cpu();	/* arch-specific boot-cpu hooks */
 	boot_cpu_hotplug_init();
+
+	print_str_guest("[wheatfox] (start_kernel) boot_cpu_hotplug_init finished\n");
 
 	pr_notice("Kernel command line: %s\n", saved_command_line);
 	/* parameters may set static keys */
@@ -921,6 +964,8 @@ void start_kernel(void)
 	/* Architectural and non-timekeeping rng init, before allocator init */
 	random_init_early(command_line);
 
+	print_str_guest("[wheatfox] (start_kernel) random_init_early finished\n");
+
 	/*
 	 * These use large bootmem allocations and must precede
 	 * initalization of page allocator
@@ -932,6 +977,8 @@ void start_kernel(void)
 	mm_core_init();
 	poking_init();
 	ftrace_init();
+
+	print_str_guest("[wheatfox] (start_kernel) ftrace_init finished\n");
 
 	/* trace_printk can be enabled here */
 	early_trace_init();
@@ -948,6 +995,8 @@ void start_kernel(void)
 		local_irq_disable();
 	radix_tree_init();
 	maple_tree_init();
+
+	print_str_guest("[wheatfox] (start_kernel) maple_tree_init finished\n");
 
 	/*
 	 * Set up housekeeping before setting up workqueues to allow the unbound
@@ -967,6 +1016,8 @@ void start_kernel(void)
 	/* Trace events are available after this */
 	trace_init();
 
+	print_str_guest("[wheatfox] (start_kernel) trace_init finished\n");
+
 	if (initcall_debug)
 		initcall_debug_enable();
 
@@ -983,6 +1034,8 @@ void start_kernel(void)
 	timekeeping_init();
 	time_init();
 
+	print_str_guest("[wheatfox] (start_kernel) time_init finished\n");
+
 	/* This must be after timekeeping is initialized */
 	random_init();
 
@@ -998,6 +1051,8 @@ void start_kernel(void)
 	early_boot_irqs_disabled = false;
 	local_irq_enable();
 
+	print_str_guest("[wheatfox] (start_kernel) local_irq_enable finished\n");
+
 	kmem_cache_init_late();
 
 	/*
@@ -1005,7 +1060,10 @@ void start_kernel(void)
 	 * we've done PCI setups etc, and console_init() must be aware of
 	 * this. But we do want output early, in case something goes wrong.
 	 */
+	print_str_guest("[wheatfox] (start_kernel) console_init\n");
 	console_init();
+	print_str_guest("[wheatfox] (start_kernel) console_init finished\n");
+
 	if (panic_later)
 		panic("Too many boot %s vars at `%s'", panic_later,
 		      panic_param);

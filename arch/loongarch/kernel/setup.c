@@ -65,6 +65,9 @@ EXPORT_SYMBOL(cpu_data);
 struct loongson_board_info b_info;
 static const char dmi_empty_string[] = "        ";
 
+void print_str_guest(char *str);
+void print_hex_guest(uint64_t val);
+
 /*
  * Setup information
  *
@@ -307,6 +310,9 @@ static void __init fdt_setup(void)
 #endif
 }
 
+void print_hex_guest(uint64_t val);
+void print_str_guest(char *str);
+
 static void __init bootcmdline_init(char **cmdline_p)
 {
 	/*
@@ -352,10 +358,19 @@ static void __init bootcmdline_init(char **cmdline_p)
 
 out:
 	*cmdline_p = boot_command_line;
+	print_str_guest("[wheatfox] (bootcmdline_init) cmdline_p: ");
+	print_hex_guest((uint64_t)cmdline_p);
+	print_str_guest("\n");
+	if(cmdline_p != NULL) {
+		print_str_guest("[wheatfox] (bootcmdline_init) *cmdline_p: ");
+		print_str_guest(*cmdline_p);
+		print_str_guest("\n");
+	}
 }
 
 void __init platform_init(void)
 {
+	print_str_guest("[wheatfox] (platform_init) start\n");
 	arch_reserve_vmcore();
 	arch_parse_crashkernel();
 
@@ -378,6 +393,7 @@ void __init platform_init(void)
 	pr_info("The BIOS Version: %s\n", b_info.bios_version);
 
 	efi_runtime_init();
+	print_str_guest("[wheatfox] (platform_init) end\n");
 }
 
 static void __init check_kernel_sections_mem(void)
@@ -396,6 +412,7 @@ static void __init check_kernel_sections_mem(void)
  */
 static void __init arch_mem_init(char **cmdline_p)
 {
+	print_str_guest("[wheatfox] (arch_mem_init) start\n");
 	if (usermem)
 		pr_info("User-defined physical RAM map overwrite\n");
 
@@ -422,6 +439,7 @@ static void __init arch_mem_init(char **cmdline_p)
 	memblock_dump_all();
 
 	early_memtest(PFN_PHYS(ARCH_PFN_OFFSET), PFN_PHYS(max_low_pfn));
+	print_str_guest("[wheatfox] (arch_mem_init) end\n");
 }
 
 static void __init resource_init(void)
@@ -604,19 +622,30 @@ static void __init prefill_possible_map(void)
 
 void __init setup_arch(char **cmdline_p)
 {
+	print_str_guest("[wheatfox] (setup_arch) start\n");
 	cpu_probe();
 
 	init_environ();
 	efi_init();
 	fdt_setup();
+
+	print_str_guest("[wheatfox] (setup_arch) fdt_setup end\n");
+
 	memblock_init();
 	pagetable_init();
 	bootcmdline_init(cmdline_p);
+
+	print_str_guest("[wheatfox] (setup_arch) bootcmdline_init end\n");
+
 	parse_early_param();
 	reserve_initrd_mem();
 
+	print_str_guest("[wheatfox] (setup_arch) reserve_initrd_mem end\n");
+
 	platform_init();
 	arch_mem_init(cmdline_p);
+
+	print_str_guest("[wheatfox] (setup_arch) arch_mem_init end\n");
 
 	resource_init();
 #ifdef CONFIG_SMP
@@ -625,8 +654,10 @@ void __init setup_arch(char **cmdline_p)
 #endif
 
 	paging_init();
+	print_str_guest("[wheatfox] (setup_arch) paging_init end\n");
 
 #ifdef CONFIG_KASAN
 	kasan_init();
 #endif
+	print_str_guest("[wheatfox] (setup_arch) end\n");
 }

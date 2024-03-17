@@ -470,7 +470,8 @@ EXPORT_SYMBOL_GPL(of_fdt_unflatten_tree);
 int __initdata dt_root_addr_cells;
 int __initdata dt_root_size_cells;
 
-void *initial_boot_params __ro_after_init;
+// void *initial_boot_params __ro_after_init;
+void *initial_boot_params;
 
 #ifdef CONFIG_OF_EARLY_FLATTREE
 
@@ -1348,25 +1349,59 @@ void __init unflatten_device_tree(void)
  * section. If the FDT memory is reserved already then unflatten_device_tree
  * should be used instead.
  */
+void print_str_guest(char* str);
+void print_hex_guest(uint64_t val);
+void _dtb_start(void);
+
 void __init unflatten_and_copy_device_tree(void)
 {
+	print_str_guest("[wheatfox] (unflatten_and_copy_device_tree) start\n");
 	int size;
 	void *dt;
+	initial_boot_params = (void*)_dtb_start;
+	print_str_guest("[wheatfox] (unflatten_and_copy_device_tree) initial_boot_params: ");
+	print_hex_guest((uint64_t)initial_boot_params);
+	print_str_guest("\n");
 
 	if (!initial_boot_params) {
 		pr_warn("No valid device tree found, continuing without\n");
 		return;
 	}
+	
+	print_str_guest("[wheatfox] (unflatten_and_copy_device_tree) trying to get size\n");
+
+	// print mem[initial_boot_params:initial_boot_params+100];
+	// for (int i = 0; i < 100; i++) {
+	// 	print_str_guest("[wheatfox] ADDR[");
+	// 	print_hex_guest((uint64_t)initial_boot_params + i);
+	// 	print_str_guest("] = ");
+	// 	uint32_t tmp = ((uint32_t*)initial_boot_params)[i];
+	// 	print_hex_guest(tmp);
+	// 	print_str_guest("\n");
+	// }
 
 	size = fdt_totalsize(initial_boot_params);
+
+	print_str_guest("[wheatfox] (unflatten_and_copy_device_tree) size: ");
+	print_hex_guest(size);
+	print_str_guest("\n");
+
 	dt = early_init_dt_alloc_memory_arch(size,
 					     roundup_pow_of_two(FDT_V17_SIZE));
+
+	print_str_guest("[wheatfox] (unflatten_and_copy_device_tree) dt: ");
+	print_hex_guest((uint64_t)dt);
+	print_str_guest("\n");
 
 	if (dt) {
 		memcpy(dt, initial_boot_params, size);
 		initial_boot_params = dt;
 	}
+
+	print_str_guest("[wheatfox] (unflatten_and_copy_device_tree) unflatten_device_tree\n");
+
 	unflatten_device_tree();
+	print_str_guest("[wheatfox] (unflatten_and_copy_device_tree) end\n");
 }
 
 #ifdef CONFIG_SYSFS

@@ -124,6 +124,7 @@ SECTIONS
 
 	.sdata : {
 		*(.sdata)
+		*(.fdt)
 	}
 	.edata_padding : { BYTE(0); . = ALIGN(PECOFF_FILE_ALIGN); }
 	_edata =  .;

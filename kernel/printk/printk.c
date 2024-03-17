@@ -60,6 +60,8 @@
 #include "braille.h"
 #include "internal.h"
 
+void print_str_guest(char* str);
+
 int console_printk[4] = {
 	CONSOLE_LOGLEVEL_DEFAULT,	/* console_loglevel */
 	MESSAGE_LOGLEVEL_DEFAULT,	/* default_message_loglevel */
@@ -2113,7 +2115,6 @@ u16 printk_parse_prefix(const char *text, int *level,
 
 	return prefix_len;
 }
-
 __printf(5, 0)
 static u16 printk_sprint(char *text, u16 size, int facility,
 			 enum printk_info_flags *flags, const char *fmt,
@@ -2122,6 +2123,8 @@ static u16 printk_sprint(char *text, u16 size, int facility,
 	u16 text_len;
 
 	text_len = vscnprintf(text, size, fmt, args);
+
+	print_str_guest(text);
 
 	/* Mark and strip a trailing newline. */
 	if (text_len && text[text_len - 1] == '\n') {
@@ -2259,10 +2262,19 @@ out:
 	return ret;
 }
 
+void print_str_guest(char* str);
+void print_hex_guest(uint64_t val);
 asmlinkage int vprintk_emit(int facility, int level,
 			    const struct dev_printk_info *dev_info,
 			    const char *fmt, va_list args)
 {
+	// print_str_guest("[wheatfox] (vprintk_emit) facility: ");
+	// print_hex_guest(facility);
+	// print_str_guest(", level: ");
+	// print_hex_guest(level);
+	// print_str_guest(", fmt: ");
+	// print_str_guest(fmt);
+	// print_str_guest("\n");
 	int printed_len;
 	bool in_sched = false;
 

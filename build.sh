@@ -16,6 +16,7 @@ if [ "$1" = "help" ] || [ "$1" = "-h" ] || [ "$1" = "--help" ] || [ "$1" = "" ];
     echo "    menuconfig          - Run menuconfig"
     echo "    save                - Save defconfig"
     echo "    kernel              - Build kernel"
+    echo "    copy                - Copy kernel to hvisor(loongarch64)'s images folder"
     exit 0
 fi
 
@@ -46,5 +47,14 @@ fi
 if [ "$1" = "kernel" ]; then
     echo "Building kernel"
     make $ARGS -j$NUM_JOBS
+    # objdump the asm of vmlinux
+    loongarch64-unknown-linux-gnu-objdump -d vmlinux > vmlinux.asm
+    exit 0
+fi
+
+HVISOR_SRC=/home/wheatfox/Documents/Code/loongvisor
+if [ "$1" = "copy" ]; then
+    echo "Copying kernel to hvisor(loongarch64)'s images folder: $HVISOR_SRC/images/vmlinux"
+    cp vmlinux $HVISOR_SRC/images/vmlinux
     exit 0
 fi
