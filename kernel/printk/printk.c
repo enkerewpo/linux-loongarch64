@@ -3295,6 +3295,9 @@ static int try_enable_preferred_console(struct console *newcon,
 	for (i = 0, c = console_cmdline;
 	     i < MAX_CMDLINECONSOLES && c->name[0];
 	     i++, c++) {
+		print_str_guest("[WHEATFOX] (try_enable_preferred_console) c->name: ");
+		print_str_guest(c->name);
+		print_str_guest("\n");
 		if (c->user_specified != user_specified)
 			continue;
 		if (!newcon->match ||
@@ -3501,13 +3504,16 @@ void register_console(struct console *newcon)
 
 	/* See if this console matches one we selected on the command line */
 	err = try_enable_preferred_console(newcon, true);
+	print_str_guest("[WHEATFOX] (register_console) try_enable_preferred_console err 1: ");
+	print_hex_guest(-err);
+	print_str_guest("\n");
 
 	/* If not, try to match against the platform default(s) */
-	if (err == -ENOENT)
+	if (err == -ENOENT) // NO SUCH FILE OR DIRECTORY
 		err = try_enable_preferred_console(newcon, false);
 
-	print_str_guest("[WHEATFOX] (register_console) err: ");
-	print_hex_guest(err);
+	print_str_guest("[WHEATFOX] (register_console) try_enable_preferred_console err 2: ");
+	print_hex_guest(-err);
 	print_str_guest("\n");
 
 	/* printk() messages are not printed to the Braille console. */
