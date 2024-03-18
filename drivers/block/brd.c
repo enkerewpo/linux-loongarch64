@@ -27,6 +27,9 @@
 
 #include <linux/uaccess.h>
 
+void print_str_guest(char *str);
+void print_hex_guest(uint64_t hex);
+
 /*
  * Each block ramdisk device has a xarray brd_pages of pages that stores
  * the pages containing the block device's contents. A brd page's ->index is
@@ -314,6 +317,9 @@ static struct dentry *brd_debugfs_dir;
 
 static int brd_alloc(int i)
 {
+	print_str_guest("[WHEATFOX] (brd_alloc) start, i = ");
+	print_hex_guest(i);
+	print_str_guest("\n");
 	struct brd_device *brd;
 	struct gendisk *disk;
 	char buf[DISK_NAME_LEN];
@@ -328,14 +334,27 @@ static int brd_alloc(int i)
 	brd->brd_number		= i;
 	list_add_tail(&brd->brd_list, &brd_devices);
 
+	print_str_guest("[WHEATFOX] (brd_alloc) brd_list added\n");
+
 	xa_init(&brd->brd_pages);
 
+	print_str_guest("[WHEATFOX] (brd_alloc) brd_pages initialized in xarray\n");
+
 	snprintf(buf, DISK_NAME_LEN, "ram%d", i);
+
+	// print buf str
+	print_str_guest("[WHEATFOX] (brd_alloc) buf: ");
+	print_str_guest(buf);
+	print_str_guest("\n");
+
 	if (!IS_ERR_OR_NULL(brd_debugfs_dir))
 		debugfs_create_u64(buf, 0444, brd_debugfs_dir,
 				&brd->brd_nr_pages);
 
 	disk = brd->brd_disk = blk_alloc_disk(NUMA_NO_NODE);
+
+	print_str_guest("[WHEATFOX] (brd_alloc) blk_alloc_disk finished\n");
+
 	if (!disk)
 		goto out_free_dev;
 
@@ -347,6 +366,8 @@ static int brd_alloc(int i)
 	strscpy(disk->disk_name, buf, DISK_NAME_LEN);
 	set_capacity(disk, rd_size * 2);
 	
+	print_str_guest("[WHEATFOX] (brd_alloc) set_capacity finished\n");
+
 	/*
 	 * This is so fdisk will align partitions on 4k, because of
 	 * direct_access API needing 4k alignment, returning a PFN
@@ -361,9 +382,15 @@ static int brd_alloc(int i)
 	blk_queue_flag_set(QUEUE_FLAG_SYNCHRONOUS, disk->queue);
 	blk_queue_flag_set(QUEUE_FLAG_NOWAIT, disk->queue);
 	err = add_disk(disk);
+
+	print_str_guest("[WHEATFOX] (brd_alloc) add_disk finished, err = ");
+	print_hex_guest(err);
+	print_str_guest("\n");
+
 	if (err)
 		goto out_cleanup_disk;
 
+	print_str_guest("[WHEATFOX] (brd_alloc) brd_alloc success\n");
 	return 0;
 
 out_cleanup_disk:
@@ -417,15 +444,26 @@ static int __init brd_init(void)
 {
 	int err, i;
 
+	print_str_guest("[WHEATFOX] (brd_init) start\n");
+
 	brd_check_and_reset_par();
 
 	brd_debugfs_dir = debugfs_create_dir("ramdisk_pages", NULL);
+
+	print_str_guest("[WHEATFOX] (brd_init) brd_debugfs_dir created\n");
+	
+	// print rd_nr
+	print_str_guest("[WHEATFOX] (brd_init) rd_nr: ");
+	print_hex_guest(rd_nr);
+	print_str_guest("\n");
 
 	for (i = 0; i < rd_nr; i++) {
 		err = brd_alloc(i);
 		if (err)
 			goto out_free;
 	}
+
+	print_str_guest("[WHEATFOX] (brd_init) created /dev/ram devices\n");
 
 	/*
 	 * brd module now has a feature to instantiate underlying device
@@ -446,6 +484,7 @@ static int __init brd_init(void)
 		err = -EIO;
 		goto out_free;
 	}
+	print_str_guest("[WHEATFOX] (brd_init) register_blkdev for ramdisk finished\n");
 
 	pr_info("brd: module loaded\n");
 	return 0;

@@ -35,6 +35,9 @@
 
 static struct kobject *block_depr;
 
+void print_str_guest(char *str);
+void print_hex_guest(uint64_t val);
+
 /*
  * Unique, monotonically increasing sequential number associated with block
  * devices instances (i.e. incremented each time a device is attached).
@@ -217,6 +220,10 @@ int __register_blkdev(unsigned int major, const char *name,
 	struct blk_major_name **n, *p;
 	int index, ret = 0;
 
+	print_str_guest("[WHAETFOX] (__register_blkdev) name: ");
+	print_str_guest(name);
+	print_str_guest("\n");
+
 	mutex_lock(&major_names_lock);
 
 	/* temporary */
@@ -276,6 +283,9 @@ int __register_blkdev(unsigned int major, const char *name,
 	}
 out:
 	mutex_unlock(&major_names_lock);
+	print_str_guest("[WHAETFOX] (__register_blkdev) ret: ");
+	print_hex_guest(-ret);
+	print_str_guest("\n");
 	return ret;
 }
 EXPORT_SYMBOL(__register_blkdev);
@@ -400,6 +410,10 @@ int __must_check device_add_disk(struct device *parent, struct gendisk *disk,
 	struct device *ddev = disk_to_dev(disk);
 	int ret;
 
+	print_str_guest("[WHAETFOX] (device_add_disk) disk->disk_name: ");
+	print_str_guest(disk->disk_name);
+	print_str_guest("\n");
+
 	/* Only makes sense for bio-based to set ->poll_bio */
 	if (queue_is_mq(disk->queue) && disk->fops->poll_bio)
 		return -EINVAL;
@@ -411,6 +425,7 @@ int __must_check device_add_disk(struct device *parent, struct gendisk *disk,
 	 * registration.
 	 */
 	elevator_init_mq(disk->queue);
+	// print_str_guest("[WHAETFOX] (device_add_disk) elevator_init_mq finished\n");
 
 	/* Mark bdev as having a submit_bio, if needed */
 	disk->part0->bd_has_submit_bio = disk->fops->submit_bio != NULL;
@@ -455,18 +470,27 @@ int __must_check device_add_disk(struct device *parent, struct gendisk *disk,
 	dev_set_name(ddev, "%s", disk->disk_name);
 	if (!(disk->flags & GENHD_FL_HIDDEN))
 		ddev->devt = MKDEV(disk->major, disk->first_minor);
+
+	// print_str_guest("[WHAETFOX] (device_add_disk) dev_set_name finished\n");
+
 	ret = device_add(ddev);
 	if (ret)
 		goto out_free_ext_minor;
+
+	// print_str_guest("[WHAETFOX] (device_add_disk) device_add finished\n");
 
 	ret = disk_alloc_events(disk);
 	if (ret)
 		goto out_device_del;
 
+	// print_str_guest("[WHAETFOX] (device_add_disk) disk_alloc_events finished\n");
+
 	ret = sysfs_create_link(block_depr, &ddev->kobj,
 				kobject_name(&ddev->kobj));
 	if (ret)
 		goto out_device_del;
+
+	// print_str_guest("[WHAETFOX] (device_add_disk) sysfs_create_link finished\n");
 
 	/*
 	 * avoid probable deadlock caused by allocating memory with
@@ -474,6 +498,8 @@ int __must_check device_add_disk(struct device *parent, struct gendisk *disk,
 	 * devices
 	 */
 	pm_runtime_set_memalloc_noio(ddev, true);
+
+	// print_str_guest("[WHAETFOX] (device_add_disk) pm_runtime_set_memalloc_noio finished\n");
 
 	disk->part0->bd_holder_dir =
 		kobject_create_and_add("holders", &ddev->kobj);
@@ -490,6 +516,8 @@ int __must_check device_add_disk(struct device *parent, struct gendisk *disk,
 	ret = blk_register_queue(disk);
 	if (ret)
 		goto out_put_slave_dir;
+
+	// print_str_guest("[WHAETFOX] (device_add_disk) blk_register_queue finished\n");
 
 	if (!(disk->flags & GENHD_FL_HIDDEN)) {
 		ret = bdi_register(disk->bdi, "%u:%u",

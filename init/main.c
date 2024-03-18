@@ -1379,27 +1379,42 @@ static void __init do_initcall_level(int level, char *command_line)
 		   NULL, ignore_unknown_bootoption);
 
 	trace_initcall_level(initcall_level_names[level]);
-	for (fn = initcall_levels[level]; fn < initcall_levels[level+1]; fn++)
+	for (fn = initcall_levels[level]; fn < initcall_levels[level+1]; fn++) {
+		// print_str_guest("[WHEATFOX] (do_initcall_level) fn: ");
+		// print_hex_guest((uint64_t)initcall_from_entry(fn));
+		// print_str_guest("\n");
 		do_one_initcall(initcall_from_entry(fn));
+	}
 }
 
 static void __init do_initcalls(void)
 {
+	print_str_guest("[WHEATFOX] (do_initcalls) start\n");
 	int level;
 	size_t len = saved_command_line_len + 1;
 	char *command_line;
 
+	print_str_guest("[WHEATFOX] (do_initcalls) trying to using kzalloc to allocate memory for command_line\n");
 	command_line = kzalloc(len, GFP_KERNEL);
+
 	if (!command_line)
 		panic("%s: Failed to allocate %zu bytes\n", __func__, len);
 
+	print_str_guest("[WHEATFOX] (do_initcalls) command_line allocated, len = ");
+	print_hex_guest(len);
+	print_str_guest("\n");
+
 	for (level = 0; level < ARRAY_SIZE(initcall_levels) - 1; level++) {
 		/* Parser modifies command_line, restore it each time */
+		// print_str_guest("[WHEATFOX] (do_initcalls) level: ");
+		// print_hex_guest(level);
+		// print_str_guest("\n");
 		strcpy(command_line, saved_command_line);
 		do_initcall_level(level, command_line);
 	}
 
 	kfree(command_line);
+	print_str_guest("[WHEATFOX] (do_initcalls) end, and command_line freed\n");
 }
 
 /*
@@ -1411,11 +1426,17 @@ static void __init do_initcalls(void)
  */
 static void __init do_basic_setup(void)
 {
+	print_str_guest("[WHEATFOX] (do_basic_setup) start, now cpu and mem should all work\n");
 	cpuset_init_smp();
+	print_str_guest("[WHEATFOX] (do_basic_setup) cpuset_init_smp finished\n");
 	driver_init();
+	print_str_guest("[WHEATFOX] (do_basic_setup) driver_init finished\n");
 	init_irq_proc();
+	print_str_guest("[WHEATFOX] (do_basic_setup) init_irq_proc finished\n");
 	do_ctors();
+	print_str_guest("[WHEATFOX] (do_basic_setup) do_ctors finished\n");
 	do_initcalls();
+	print_str_guest("[WHEATFOX] (do_basic_setup) end\n");
 }
 
 static void __init do_pre_smp_initcalls(void)
@@ -1524,7 +1545,12 @@ static int __ref kernel_init(void *unused)
 	 */
 	wait_for_completion(&kthreadd_done);
 
+	print_str_guest("[WHEATFOX] (kernel_init) entering kernel_init_freeable\n");
+
 	kernel_init_freeable();
+
+	print_str_guest("[WHEATFOX] (kernel_init) kernel_init_freeable finished\n");
+
 	/* need to finish all async __init code before freeing the memory */
 	async_synchronize_full();
 
@@ -1552,6 +1578,8 @@ static int __ref kernel_init(void *unused)
 	do_sysctl_args();
 
 	print_str_guest("[WHEATFOX] (kernel_init) do_sysctl_args finished\n");
+
+	print_str_guest("[WHEATFOX] (kernel_init) trying to run the init process\n");
 
 	if (ramdisk_execute_command) {
 		ret = run_init_process(ramdisk_execute_command);
@@ -1611,6 +1639,7 @@ void __init console_on_rootfs(void)
 
 static noinline void __init kernel_init_freeable(void)
 {
+	print_str_guest("[WHEATFOX] (kernel_init_freeable) start\n");
 	/* Now the scheduler is fully set up and can do blocking allocations */
 	gfp_allowed_mask = __GFP_BITS_MASK;
 
@@ -1627,6 +1656,8 @@ static noinline void __init kernel_init_freeable(void)
 
 	init_mm_internals();
 
+	print_str_guest("[WHEATFOX] (kernel_init_freeable) init_mm_internals finished\n");
+
 	rcu_init_tasks_generic();
 	do_pre_smp_initcalls();
 	lockup_detector_init();
@@ -1634,25 +1665,40 @@ static noinline void __init kernel_init_freeable(void)
 	smp_init();
 	sched_init_smp();
 
+	print_str_guest("[WHEATFOX] (kernel_init_freeable) sched_init_smp finished\n");
+
 	workqueue_init_topology();
 	padata_init();
 	page_alloc_init_late();
 
+	print_str_guest("[WHEATFOX] (kernel_init_freeable) page_alloc_init_late finished\n");
+
 	do_basic_setup();
+
+	print_str_guest("[WHEATFOX] (kernel_init_freeable) do_basic_setup finished\n");
 
 	kunit_run_all_tests();
 
 	wait_for_initramfs();
+
+	print_str_guest("[WHEATFOX] (kernel_init_freeable) wait_for_initramfs finished\n");
+
 	console_on_rootfs();
+
+	print_str_guest("[WHEATFOX] (kernel_init_freeable) console_on_rootfs finished\n");
 
 	/*
 	 * check if there is an early userspace init.  If yes, let it do all
 	 * the work
 	 */
 	if (init_eaccess(ramdisk_execute_command) != 0) {
+		print_str_guest("[WHEATFOX] (kernel_init_freeable) found early userspace init\n");
 		ramdisk_execute_command = NULL;
 		prepare_namespace();
+		print_str_guest("[WHEATFOX] (kernel_init_freeable) prepare_namespace finished\n");
 	}
+
+	print_str_guest("[WHEATFOX] (kernel_init_freeable) rootfs should be ready now\n");
 
 	/*
 	 * Ok, we have completed the initial bootup, and

@@ -19,6 +19,9 @@
 #include <linux/task_work.h>
 #include <linux/umh.h>
 
+void print_str_guest(char *str);
+void print_hex_guest(uint64_t val);
+
 static __initdata bool csum_present;
 static __initdata u32 io_csum;
 
@@ -669,6 +672,8 @@ static void __init populate_initrd_image(char *err)
 	struct file *file;
 	loff_t pos = 0;
 
+	print_str_guest("[WHEATFOX] (populate_initrd_image) start\n");
+
 	unpack_to_rootfs(__initramfs_start, __initramfs_size);
 
 	printk(KERN_INFO "rootfs image is not initramfs (%s); looks like an initrd\n",
@@ -683,15 +688,22 @@ static void __init populate_initrd_image(char *err)
 		pr_err("/initrd.image: incomplete write (%zd != %ld)\n",
 		       written, initrd_end - initrd_start);
 	fput(file);
+
+	print_str_guest("[WHEATFOX] (populate_initrd_image) end\n");
 }
 #endif /* CONFIG_BLK_DEV_RAM */
 
 static void __init do_populate_rootfs(void *unused, async_cookie_t cookie)
 {
+	print_str_guest("[WHEATFOX] (do_populate_rootfs) start\n");
 	/* Load the built in initramfs */
 	char *err = unpack_to_rootfs(__initramfs_start, __initramfs_size);
-	if (err)
+	if (err) {
+		print_str_guest("[WHEATFOX] (do_populate_rootfs) failed to unpack initramfs\n");
+		print_str_guest(err);
+		print_str_guest("\n");
 		panic_show_mem("%s", err); /* Failed to decompress INTERNAL initramfs */
+	}
 
 	if (!initrd_start || IS_ENABLED(CONFIG_INITRAMFS_FORCE))
 		goto done;
@@ -700,6 +712,8 @@ static void __init do_populate_rootfs(void *unused, async_cookie_t cookie)
 		printk(KERN_INFO "Trying to unpack rootfs image as initramfs...\n");
 	else
 		printk(KERN_INFO "Unpacking initramfs...\n");
+
+	print_str_guest("[WHEATFOX] (do_populate_rootfs) trying to unpack_to_rootfs\n");
 
 	err = unpack_to_rootfs((char *)initrd_start, initrd_end - initrd_start);
 	if (err) {
@@ -711,6 +725,7 @@ static void __init do_populate_rootfs(void *unused, async_cookie_t cookie)
 	}
 
 done:
+	print_str_guest("[WHEATFOX] (do_populate_rootfs) now we are in done label\n");
 	/*
 	 * If the initrd region is overlapped with crashkernel reserved region,
 	 * free only memory that is not part of crashkernel region.
@@ -745,11 +760,13 @@ EXPORT_SYMBOL_GPL(wait_for_initramfs);
 
 static int __init populate_rootfs(void)
 {
+	print_str_guest("[WHEATFOX] (populate_rootfs) start\n");
 	initramfs_cookie = async_schedule_domain(do_populate_rootfs, NULL,
 						 &initramfs_domain);
 	usermodehelper_enable();
 	if (!initramfs_async)
 		wait_for_initramfs();
+	print_str_guest("[WHEATFOX] (populate_rootfs) end\n");
 	return 0;
 }
 rootfs_initcall(populate_rootfs);
