@@ -1632,6 +1632,7 @@ static int __ref kernel_init(void *unused)
 /* Open /dev/console, for stdin/stdout/stderr, this should never fail */
 void __init console_on_rootfs(void)
 {
+	print_str_guest("[WHEATFOX] (console_on_rootfs) start\n");
 	struct file *file = filp_open("/dev/console", O_RDWR, 0);
 
 	if (IS_ERR(file)) {
@@ -1642,6 +1643,7 @@ void __init console_on_rootfs(void)
 	init_dup(file);
 	init_dup(file);
 	fput(file);
+	print_str_guest("[WHEATFOX] (console_on_rootfs) end\n");
 }
 
 static noinline void __init kernel_init_freeable(void)

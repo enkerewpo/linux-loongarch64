@@ -1602,7 +1602,7 @@ static struct vmap_area *alloc_vmap_area(unsigned long size,
 	print_hex_guest(vstart);
 	print_str_guest(", vend: ");
 	print_hex_guest(vend);
-	print_str_guest("\n");https://github.com/vincenthouyi/elf_rs
+	print_str_guest("\n");
 
 	if (unlikely(!size || offset_in_page(size) || !is_power_of_2(align)))
 		return ERR_PTR(-EINVAL);
