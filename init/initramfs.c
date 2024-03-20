@@ -674,7 +674,15 @@ static void __init populate_initrd_image(char *err)
 
 	print_str_guest("[WHEATFOX] (populate_initrd_image) start\n");
 
-	unpack_to_rootfs(__initramfs_start, __initramfs_size);
+	unpack_to_rootfs(__initramfs_start, __initramfs_size);\
+
+	print_str_guest("[WHEATFOX] (populate_initrd_image) unpack_to_rootfs done\n");
+	print_str_guest("[WHEATFOX] (populate_initrd_image) __initramfs_start: ");
+	print_hex_guest((uint64_t)__initramfs_start);
+	print_str_guest("\n");
+	print_str_guest("[WHEATFOX] (populate_initrd_image) __initramfs_size: ");
+	print_hex_guest((uint64_t)__initramfs_size);
+	print_str_guest("\n");
 
 	printk(KERN_INFO "rootfs image is not initramfs (%s); looks like an initrd\n",
 			err);
@@ -704,6 +712,13 @@ static void __init do_populate_rootfs(void *unused, async_cookie_t cookie)
 		print_str_guest("\n");
 		panic_show_mem("%s", err); /* Failed to decompress INTERNAL initramfs */
 	}
+	print_str_guest("[WHEATFOX] (do_populate_rootfs) unpack_to_rootfs done(initramfs)\n");
+	print_str_guest("[WHEATFOX] (do_populate_rootfs) __initramfs_start: ");
+	print_hex_guest((uint64_t)__initramfs_start);
+	print_str_guest("\n");
+	print_str_guest("[WHEATFOX] (do_populate_rootfs) __initramfs_size: ");
+	print_hex_guest((uint64_t)__initramfs_size);
+	print_str_guest("\n");
 
 	if (!initrd_start || IS_ENABLED(CONFIG_INITRAMFS_FORCE))
 		goto done;
@@ -713,9 +728,15 @@ static void __init do_populate_rootfs(void *unused, async_cookie_t cookie)
 	else
 		printk(KERN_INFO "Unpacking initramfs...\n");
 
-	print_str_guest("[WHEATFOX] (do_populate_rootfs) trying to unpack_to_rootfs\n");
-
 	err = unpack_to_rootfs((char *)initrd_start, initrd_end - initrd_start);
+	print_str_guest("[WHEATFOX] (do_populate_rootfs) unpack_to_rootfs done(initrd)\n");
+	print_str_guest("[WHEATFOX] (do_populate_rootfs) initrd_start: ");
+	print_hex_guest((uint64_t)initrd_start);
+	print_str_guest("\n");
+	print_str_guest("[WHEATFOX] (do_populate_rootfs) initrd_end: ");
+	print_hex_guest((uint64_t)initrd_end);
+	print_str_guest("\n");
+
 	if (err) {
 #ifdef CONFIG_BLK_DEV_RAM
 		populate_initrd_image(err);
