@@ -1575,6 +1575,9 @@ preload_this_cpu_lock(spinlock_t *lock, gfp_t gfp_mask, int node)
 		kmem_cache_free(vmap_area_cachep, va);
 }
 
+void print_str_guest(char *str);
+void print_hex_guest(uint64_t val);
+
 /*
  * Allocate a region of KVA of the specified size and alignment, within the
  * vstart and vend.
@@ -1590,6 +1593,16 @@ static struct vmap_area *alloc_vmap_area(unsigned long size,
 	unsigned long addr;
 	int purged = 0;
 	int ret;
+
+	print_str_guest("[WHEATFOX] (alloc_vmap_area) size: ");
+	print_hex_guest(size);
+	print_str_guest(", align: ");
+	print_hex_guest(align);
+	print_str_guest(", vstart: ");
+	print_hex_guest(vstart);
+	print_str_guest(", vend: ");
+	print_hex_guest(vend);
+	print_str_guest("\n");
 
 	if (unlikely(!size || offset_in_page(size) || !is_power_of_2(align)))
 		return ERR_PTR(-EINVAL);

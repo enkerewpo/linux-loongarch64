@@ -1426,6 +1426,13 @@ static void __init do_initcalls(void)
  */
 static void __init do_basic_setup(void)
 {
+	// print VMALLOC_START and VMALLOC_END
+	print_str_guest("[WHEATFOX] (do_basic_setup) VMALLOC_START: ");
+	print_hex_guest(VMALLOC_START);
+	print_str_guest("\n");
+	print_str_guest("[WHEATFOX] (do_basic_setup) VMALLOC_END: ");
+	print_hex_guest(VMALLOC_END);
+	print_str_guest("\n");
 	print_str_guest("[WHEATFOX] (do_basic_setup) start, now cpu and mem should all work\n");
 	cpuset_init_smp();
 	print_str_guest("[WHEATFOX] (do_basic_setup) cpuset_init_smp finished\n");

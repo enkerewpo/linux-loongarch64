@@ -651,22 +651,34 @@ out_free_state:
 	return ret;
 }
 
+void print_str_guest(char *str);
+void print_hex_guest(uint64_t val);
+
 int bdev_disk_changed(struct gendisk *disk, bool invalidate)
 {
 	struct block_device *part;
 	unsigned long idx;
 	int ret = 0;
 
+	print_str_guest("[WHEATFOX] (bdev_disk_changed) disk->disk_name: ");
+	print_str_guest(disk->disk_name);
+	print_str_guest(" inv = ");
+	print_hex_guest(invalidate);
+	print_str_guest("\n");
+
 	lockdep_assert_held(&disk->open_mutex);
 
 	if (!disk_live(disk))
 		return -ENXIO;
 
+	print_str_guest("[WHEATFOX] (bdev_disk_changed) disk is live\n");
 rescan:
 	if (disk->open_partitions)
 		return -EBUSY;
 	sync_blockdev(disk->part0);
 	invalidate_bdev(disk->part0);
+
+	print_str_guest("[WHEATFOX] (bdev_disk_changed) disk invalidated\n");
 
 	xa_for_each_start(&disk->part_tbl, idx, part, 1) {
 		/*
@@ -712,7 +724,9 @@ rescan:
 		 */
 		kobject_uevent(&disk_to_dev(disk)->kobj, KOBJ_CHANGE);
 	}
-
+	print_str_guest("[WHEATFOX] (bdev_disk_changed) ret = ");
+	print_hex_guest(ret);
+	print_str_guest("\n");
 	return ret;
 }
 /*

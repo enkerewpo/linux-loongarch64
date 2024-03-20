@@ -62,12 +62,37 @@ static inline void set_elf_platform(int cpu, const char *plat)
 unsigned long vm_map_base;
 EXPORT_SYMBOL(vm_map_base);
 
+void print_str_guest(char* str);
+void print_hex_guest(uint64_t val);
+
 static void cpu_probe_addrbits(struct cpuinfo_loongarch *c)
 {
 #ifdef __NEED_ADDRBITS_PROBE
 	c->pabits = (read_cpucfg(LOONGARCH_CPUCFG1) & CPUCFG1_PABITS) >> 4;
 	c->vabits = (read_cpucfg(LOONGARCH_CPUCFG1) & CPUCFG1_VABITS) >> 12;
 	vm_map_base = 0UL - (1UL << c->vabits);
+	print_str_guest("[WHEATFOX] (cpu_probe_addrbits) vm_map_base: ");
+	print_hex_guest(vm_map_base);
+	print_str_guest("\n");
+	// print PTRS_PER_PGD * PTRS_PER_PUD * PTRS_PER_PMD * PTRS_PER_PTE * PAGE_SIZE, (1UL << cpu_vabits) / 2
+	print_str_guest("[WHEATFOX] (cpu_probe_addrbits) min lhs: ");
+	print_hex_guest(PTRS_PER_PGD * PTRS_PER_PUD * PTRS_PER_PMD * PTRS_PER_PTE * PAGE_SIZE);
+	print_str_guest("\n");
+	print_str_guest("[WHEATFOX] (cpu_probe_addrbits) min rhs: ");
+	print_hex_guest((1UL << cpu_vabits) / 2);
+	print_str_guest("\n");
+	// print_str_guest("[WHEATFOX] (cpu_probe_addrbits) minus: ");
+	// uint64_t minus = PMD_SIZE + VMEMMAP_SIZE + KFENCE_AREA_SIZE;
+	// print_hex_guest(minus);
+	print_str_guest("[WHEATFOX] (cpu_probe_addrbits) PMD_SIZE: ");
+	print_hex_guest(PMD_SIZE);
+	print_str_guest("\n");
+	print_str_guest("[WHEATFOX] (cpu_probe_addrbits) VMEMMAP_SIZE: ");
+	print_hex_guest(VMEMMAP_SIZE);
+	print_str_guest("\n");
+	print_str_guest("[WHEATFOX] (cpu_probe_addrbits) KFENCE_AREA_SIZE: ");
+	print_hex_guest(KFENCE_AREA_SIZE);
+	print_str_guest("\n");
 #endif
 }
 

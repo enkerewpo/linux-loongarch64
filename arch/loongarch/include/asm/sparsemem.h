@@ -12,7 +12,8 @@
 #define MAX_PHYSMEM_BITS	48
 
 #ifdef CONFIG_SPARSEMEM_VMEMMAP
-#define VMEMMAP_SIZE	(sizeof(struct page) * (1UL << (cpu_pabits + 1 - PAGE_SHIFT)))
+// #define VMEMMAP_SIZE	(sizeof(struct page) * (1UL << (cpu_pabits + 1 - PAGE_SHIFT)))
+#define VMEMMAP_SIZE	0
 #endif
 
 #endif /* CONFIG_SPARSEMEM */
