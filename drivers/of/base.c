@@ -30,6 +30,9 @@
 
 #include "of_private.h"
 
+void print_str_guest(char* str);
+void print_hex_guest(uint64_t val);
+
 LIST_HEAD(aliases_lookup);
 
 struct device_node *of_root;
@@ -946,6 +949,10 @@ const struct of_device_id *__of_match_node(const struct of_device_id *matches,
 {
 	const struct of_device_id *best_match = NULL;
 	int score, best_score = 0;
+
+	// print_str_guest("[WHEATFOX] (__of_match_node) node->name: ");
+	// print_str_guest(node->name);
+	// print_str_guest("\n");
 
 	if (!matches)
 		return NULL;

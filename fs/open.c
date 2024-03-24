@@ -37,6 +37,9 @@
 
 #include "internal.h"
 
+void print_str_guest(char *str);
+void print_hex_guest(uint64_t val);
+
 int do_truncate(struct mnt_idmap *idmap, struct dentry *dentry,
 		loff_t length, unsigned int time_attrs, struct file *filp)
 {
@@ -898,6 +901,7 @@ static int do_dentry_open(struct file *f,
 			  struct inode *inode,
 			  int (*open)(struct inode *, struct file *))
 {
+	print_str_guest("[WHEATFOX] (do_dentry_open) start\n");
 	static const struct file_operations empty_fops = {};
 	int error;
 
@@ -916,9 +920,13 @@ static int do_dentry_open(struct file *f,
 	if ((f->f_mode & (FMODE_READ | FMODE_WRITE)) == FMODE_READ) {
 		i_readcount_inc(inode);
 	} else if (f->f_mode & FMODE_WRITE && !special_file(inode->i_mode)) {
+		print_str_guest("[WHEATFOX] (do_dentry_open) found write mode, trying to get write access\n");
 		error = file_get_write_access(f);
-		if (unlikely(error))
+		if (unlikely(error)) {
+			print_str_guest("[WHEATFOX] (do_dentry_open) failed to get write access\n");
 			goto cleanup_file;
+		}
+		print_str_guest("[WHEATFOX] (do_dentry_open) got write access!\n");
 		f->f_mode |= FMODE_WRITER;
 	}
 
@@ -932,22 +940,43 @@ static int do_dentry_open(struct file *f,
 		goto cleanup_all;
 	}
 
+	print_str_guest("[WHEATFOX] (do_dentry_open) trying security_file_open\n");
 	error = security_file_open(f);
-	if (error)
+	if (error) {
+		print_str_guest("[WHEATFOX] (do_dentry_open) security_file_open failed, error: ");
+		print_hex_guest(error);
+		print_str_guest("\n");
 		goto cleanup_all;
+	}
+	print_str_guest("[WHEATFOX] (do_dentry_open) security_file_open success\n");
 
 	error = break_lease(file_inode(f), f->f_flags);
-	if (error)
+	if (error) {
+		print_str_guest("[WHEATFOX] (do_dentry_open) break_lease failed, error: ");
+		print_hex_guest(error);
+		print_str_guest("\n");
 		goto cleanup_all;
+	}
+	print_str_guest("[WHEATFOX] (do_dentry_open) break_lease success\n");
 
 	/* normally all 3 are set; ->open() can clear them if needed */
 	f->f_mode |= FMODE_LSEEK | FMODE_PREAD | FMODE_PWRITE;
-	if (!open)
+	if (!open) {
 		open = f->f_op->open;
+		print_str_guest("[WHEATFOX] (do_dentry_open) open is NULL, using f_op->open, now: ");
+		print_hex_guest(open);
+		print_str_guest("\n");
+	}
 	if (open) {
+		print_str_guest("[WHEATFOX] (do_dentry_open) calling open\n");
 		error = open(inode, f);
-		if (error)
+		if (error) {
+			print_str_guest("[WHEATFOX] (do_dentry_open) open failed, error: ");
+			print_hex_guest(error);
+			print_str_guest("\n");
 			goto cleanup_all;
+		}
+		print_str_guest("[WHEATFOX] (do_dentry_open) open success\n");
 	}
 	f->f_mode |= FMODE_OPENED;
 	if ((f->f_mode & FMODE_READ) &&
@@ -1374,11 +1403,22 @@ inline int build_open_flags(const struct open_how *how, struct open_flags *op)
  */
 struct file *file_open_name(struct filename *name, int flags, umode_t mode)
 {
+	print_str_guest("[WHEATFOX] (file_open_name) name: ");
+	print_str_guest(name->name);
+	print_str_guest(", flags: ");
+	print_hex_guest(flags);
+	print_str_guest(", mode: ");
+	print_hex_guest(mode);
+	print_str_guest("\n");
 	struct open_flags op;
 	struct open_how how = build_open_how(flags, mode);
 	int err = build_open_flags(&how, &op);
-	if (err)
+	print_str_guest("[WHEATFOX] (file_open_name) err: ");
+	print_hex_guest(err);
+	print_str_guest("\n");
+	if (err) {
 		return ERR_PTR(err);
+	}
 	return do_filp_open(AT_FDCWD, name, &op);
 }
 
@@ -1397,8 +1437,19 @@ struct file *filp_open(const char *filename, int flags, umode_t mode)
 {
 	struct filename *name = getname_kernel(filename);
 	struct file *file = ERR_CAST(name);
-	
+
+	print_str_guest("[WHEATFOX] (filp_open) filename: ");
+	print_str_guest(filename);
+	print_str_guest(", flags: ");
+	print_hex_guest(flags);
+	print_str_guest(", mode: ");
+	print_hex_guest(mode);
+	print_str_guest("\n");
+
 	if (!IS_ERR(name)) {
+		print_str_guest("[WHEATFOX] (filp_open) name: ");
+		print_str_guest(name->name);
+		print_str_guest("\n");
 		file = file_open_name(name, flags, mode);
 		putname(name);
 	}

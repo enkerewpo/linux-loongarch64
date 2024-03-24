@@ -34,6 +34,9 @@
 
 #include "serial_base.h"
 
+void print_str_guest(char* str);
+void print_hex_guest(uint64_t val);
+
 /*
  * This is used to lock changes in serial line configuration.
  */
@@ -3357,6 +3360,8 @@ static int serial_core_port_device_add(struct serial_ctrl_device *ctrl_dev,
  */
 int serial_core_register_port(struct uart_driver *drv, struct uart_port *port)
 {
+	print_str_guest("[WHEATFOX] (serial_core_register_port) start\n");
+
 	struct serial_ctrl_device *ctrl_dev, *new_ctrl_dev = NULL;
 	int ret;
 

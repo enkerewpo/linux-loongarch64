@@ -42,6 +42,9 @@
 #define UART_NPCM_TOR          7
 #define UART_NPCM_TOIE         BIT(7)  /* Timeout Interrupt Enable */
 
+void print_str_guest(char* str);
+void print_hex_guest(uint64_t val);
+
 /*
  * Debugging.
  */
@@ -3490,14 +3493,17 @@ static unsigned int probe_baud(struct uart_port *port)
 
 int serial8250_console_setup(struct uart_port *port, char *options, bool probe)
 {
+	print_str_guest("[WHEATFOX] (serial8250_console_setup) start\n");
 	int baud = 9600;
 	int bits = 8;
 	int parity = 'n';
 	int flow = 'n';
 	int ret;
 
-	if (!port->iobase && !port->membase)
+	if (!port->iobase && !port->membase) {
+		print_str_guest("[WHEATFOX] (serial8250_console_setup) no iobase and no membase, returning -ENODEV\n");
 		return -ENODEV;
+	}
 
 	if (options)
 		uart_parse_options(options, &baud, &parity, &bits, &flow);

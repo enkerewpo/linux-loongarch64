@@ -43,6 +43,8 @@
 
 #include "8250.h"
 
+void print_str_guest(char* str);
+void print_hex_guest(uint64_t val);
 /*
  * Configuration:
  *   share_irqs - whether we pass IRQF_SHARED to request_irq().  This option
@@ -490,6 +492,10 @@ static inline void serial8250_apply_quirks(struct uart_8250_port *up)
 
 static struct uart_8250_port *serial8250_setup_port(int index)
 {
+	// print_str_guest("[WHEATFOX] (serial8250_setup_port) start, index = ");
+	// print_hex_guest(index);
+	// print_str_guest("\n");
+
 	struct uart_8250_port *up;
 
 	if (index >= UART_NR)
@@ -519,6 +525,7 @@ static struct uart_8250_port *serial8250_setup_port(int index)
 
 static void __init serial8250_isa_init_ports(void)
 {
+	print_str_guest("[WHEATFOX] (serial8250_isa_init_ports) start\n");
 	struct uart_8250_port *up;
 	static int first = 1;
 	int i, irqflag = 0;
@@ -544,6 +551,9 @@ static void __init serial8250_isa_init_ports(void)
 
 	if (share_irqs)
 		irqflag = IRQF_SHARED;
+	
+	// in loongarch64 we don't have old_serial_port support
+	// we use fdt of acpi to pass serial port info, but how? -wheatfox 2024.3.24
 
 	for (i = 0, up = serial8250_ports;
 	     i < ARRAY_SIZE(old_serial_port) && i < nr_uarts;
@@ -600,8 +610,14 @@ static void univ8250_console_write(struct console *co, const char *s,
 	serial8250_console_write(up, s, count);
 }
 
+extern struct uart_port early_port;
+
 static int univ8250_console_setup(struct console *co, char *options)
 {
+	print_str_guest("[WHEATFOX] (univ8250_console_setup) start, console name: ");
+	print_str_guest(co->name);
+	print_str_guest("\n");
+
 	struct uart_8250_port *up;
 	struct uart_port *port;
 	int retval, i;
@@ -618,20 +634,56 @@ static int univ8250_console_setup(struct console *co, char *options)
 	 * If the console is past the initial isa ports, init more ports up to
 	 * co->index as needed and increment nr_uarts accordingly.
 	 */
+
+	print_str_guest("[WHEATFOX] (univ8250_console_setup) nr_uarts: ");
+	print_hex_guest(nr_uarts);
+	print_str_guest(", co->index: ");
+	print_hex_guest(co->index);
+	print_str_guest("\n");
+
 	for (i = nr_uarts; i <= co->index; i++) {
 		up = serial8250_setup_port(i);
+		print_str_guest("[WHEATFOX] (univ8250_console_setup) serial8250_setup_port on i = ");
+		print_hex_guest(i);
+		print_str_guest(", up = ");
+		print_hex_guest((uint64_t)up);
+		print_str_guest("\n");
 		if (!up)
 			return -ENODEV;
 		nr_uarts++;
 	}
 
 	port = &serial8250_ports[co->index].port;
+
+	// *port = early_port;
+	// port->membase = 0x800000001fe001e0llu;
+
+	// dump port info
+	print_str_guest("[WHEATFOX] (univ8250_console_setup) port->iobase: ");
+	print_hex_guest(port->iobase);
+	print_str_guest("\n");
+	print_str_guest("[WHEATFOX] (univ8250_console_setup) port->membase: ");
+	print_hex_guest(port->membase);
+	print_str_guest("\n");
+	print_str_guest("[WHEATFOX] (univ8250_console_setup) port->irq: ");
+	print_hex_guest(port->irq);
+	print_str_guest("\n");
+	print_str_guest("[WHEATFOX] (univ8250_console_setup) port->uartclk: ");
+	print_hex_guest(port->uartclk);
+	print_str_guest("\n");
+
 	/* link port to console */
 	port->cons = co;
 
 	retval = serial8250_console_setup(port, options, false);
-	if (retval != 0)
+	print_str_guest("[WHEATFOX] (univ8250_console_setup) serial8250_console_setup done, ret = ");
+	print_hex_guest(retval);
+	print_str_guest("\n");
+
+	if (retval != 0) {
+		print_str_guest("[WHEATFOX] (univ8250_console_setup) serial8250_console_setup failed\n");
 		port->cons = NULL;
+	}
 	return retval;
 }
 
@@ -849,6 +901,7 @@ EXPORT_SYMBOL(serial8250_resume_port);
  */
 static int serial8250_probe(struct platform_device *dev)
 {
+	print_str_guest("[WHEATFOX] (serial8250_probe) start\n");
 	struct plat_serial8250_port *p = dev_get_platdata(&dev->dev);
 	struct uart_8250_port uart;
 	int ret, i, irqflag = 0;
@@ -894,6 +947,7 @@ static int serial8250_probe(struct platform_device *dev)
 				p->irq, ret);
 		}
 	}
+	print_str_guest("[WHEATFOX] (serial8250_probe) end\n");
 	return 0;
 }
 

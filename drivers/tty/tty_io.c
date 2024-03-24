@@ -111,6 +111,9 @@
 #include <linux/nsproxy.h>
 #include "tty.h"
 
+void print_str_guest(char *str);
+void print_hex_guest(uint64_t val);
+
 #undef TTY_DEBUG_HANGUP
 #ifdef TTY_DEBUG_HANGUP
 # define tty_debug_hangup(tty, f, args...)	tty_debug(tty, f, ##args)
@@ -1916,11 +1919,13 @@ static struct tty_struct *tty_open_current_tty(dev_t device, struct file *filp)
 static struct tty_driver *tty_lookup_driver(dev_t device, struct file *filp,
 		int *index)
 {
+	print_str_guest("[WHEATFOX] (tty_lookup_driver) start\n");
 	struct tty_driver *driver = NULL;
 
 	switch (device) {
 #ifdef CONFIG_VT
 	case MKDEV(TTY_MAJOR, 0): {
+		print_str_guest("[WHEATFOX] (tty_lookup_driver) case MKDEV(TTY_MAJOR, 0)\n");
 		extern struct tty_driver *console_driver;
 
 		driver = tty_driver_kref_get(console_driver);
@@ -1929,8 +1934,11 @@ static struct tty_driver *tty_lookup_driver(dev_t device, struct file *filp,
 	}
 #endif
 	case MKDEV(TTYAUX_MAJOR, 1): {
+		print_str_guest("[WHEATFOX] (tty_lookup_driver) case MKDEV(TTYAUX_MAJOR, 1)\n");
 		struct tty_driver *console_driver = console_device(index);
-
+		print_str_guest("[WHEATFOX] (tty_lookup_driver) console_driver: ");
+		print_hex_guest((unsigned long)console_driver);
+		print_str_guest("\n");
 		if (console_driver) {
 			driver = tty_driver_kref_get(console_driver);
 			if (driver && filp) {
@@ -1944,6 +1952,7 @@ static struct tty_driver *tty_lookup_driver(dev_t device, struct file *filp,
 		return ERR_PTR(-ENODEV);
 	}
 	default:
+		print_str_guest("[WHEATFOX] (tty_lookup_driver) default\n");
 		driver = get_tty_driver(device, index);
 		if (!driver)
 			return ERR_PTR(-ENODEV);
@@ -2040,6 +2049,10 @@ EXPORT_SYMBOL_GPL(tty_kopen_shared);
 static struct tty_struct *tty_open_by_driver(dev_t device,
 					     struct file *filp)
 {
+	print_str_guest("[WHEATFOX] (tty_open_by_driver) start, filename: ");
+	print_str_guest(filp->f_path.dentry->d_name.name);
+	print_str_guest("\n");
+
 	struct tty_struct *tty;
 	struct tty_driver *driver = NULL;
 	int index = -1;
@@ -2047,6 +2060,9 @@ static struct tty_struct *tty_open_by_driver(dev_t device,
 
 	mutex_lock(&tty_mutex);
 	driver = tty_lookup_driver(device, filp, &index);
+	print_str_guest("[WHEATFOX] (tty_open_by_driver) tty_lookup_driver, driver: ");
+	print_hex_guest((unsigned long)driver);
+	print_str_guest("\n");
 	if (IS_ERR(driver)) {
 		mutex_unlock(&tty_mutex);
 		return ERR_CAST(driver);
@@ -2054,12 +2070,16 @@ static struct tty_struct *tty_open_by_driver(dev_t device,
 
 	/* check whether we're reopening an existing tty */
 	tty = tty_driver_lookup_tty(driver, filp, index);
+	print_str_guest("[WHEATFOX] (tty_open_by_driver) tty_driver_lookup_tty, tty: ");
+	print_hex_guest((unsigned long)tty);
+	print_str_guest("\n");
 	if (IS_ERR(tty)) {
 		mutex_unlock(&tty_mutex);
 		goto out;
 	}
 
 	if (tty) {
+		print_str_guest("[WHEATFOX] (tty_open_by_driver) we got a tty, nice!\n");
 		if (tty_port_kopened(tty->port)) {
 			tty_kref_put(tty);
 			mutex_unlock(&tty_mutex);
@@ -2076,11 +2096,15 @@ static struct tty_struct *tty_open_by_driver(dev_t device,
 			goto out;
 		}
 		retval = tty_reopen(tty);
+		print_str_guest("[WHEATFOX] (tty_open_by_driver) tty_reopen, retval: ");
+		print_hex_guest(retval);
+		print_str_guest("\n");
 		if (retval < 0) {
 			tty_unlock(tty);
 			tty = ERR_PTR(retval);
 		}
 	} else { /* Returns with the tty_lock held for now */
+		print_str_guest("[WHEATFOX] (tty_open_by_driver) we didn't get a tty, running tty_init_dev\n");
 		tty = tty_init_dev(driver, index);
 		mutex_unlock(&tty_mutex);
 	}
@@ -2114,6 +2138,10 @@ out:
  */
 static int tty_open(struct inode *inode, struct file *filp)
 {
+	print_str_guest("[WHEATFOX] (tty_open) start, filename: ");
+	print_str_guest(filp->f_path.dentry->d_name.name);
+	print_str_guest("\n");
+
 	struct tty_struct *tty;
 	int noctty, retval;
 	dev_t device = inode->i_rdev;
@@ -2127,8 +2155,15 @@ retry_open:
 		return -ENOMEM;
 
 	tty = tty_open_current_tty(device, filp);
-	if (!tty)
+	print_str_guest("[WHEATFOX] (tty_open) tty_open_current_tty, tty: ");
+	print_hex_guest((unsigned long)tty);
+	print_str_guest("\n");
+	if (!tty) {
 		tty = tty_open_by_driver(device, filp);
+		print_str_guest("[WHEATFOX] (tty_open) tty_open_by_driver, tty: ");
+		print_hex_guest((unsigned long)tty);
+		print_str_guest("\n");
+	}
 
 	if (IS_ERR(tty)) {
 		tty_free_file(filp);

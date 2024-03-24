@@ -220,7 +220,7 @@ int __register_blkdev(unsigned int major, const char *name,
 	struct blk_major_name **n, *p;
 	int index, ret = 0;
 
-	print_str_guest("[WHAETFOX] (__register_blkdev) name: ");
+	print_str_guest("[WHEATFOX] (__register_blkdev) name: ");
 	print_str_guest(name);
 	print_str_guest("\n");
 
@@ -283,7 +283,7 @@ int __register_blkdev(unsigned int major, const char *name,
 	}
 out:
 	mutex_unlock(&major_names_lock);
-	print_str_guest("[WHAETFOX] (__register_blkdev) ret: ");
+	print_str_guest("[WHEATFOX] (__register_blkdev) ret: ");
 	print_hex_guest(-ret);
 	print_str_guest("\n");
 	return ret;
@@ -410,7 +410,7 @@ int __must_check device_add_disk(struct device *parent, struct gendisk *disk,
 	struct device *ddev = disk_to_dev(disk);
 	int ret;
 
-	print_str_guest("[WHAETFOX] (device_add_disk) disk->disk_name: ");
+	print_str_guest("[WHEATFOX] (device_add_disk) disk->disk_name: ");
 	print_str_guest(disk->disk_name);
 	print_str_guest("\n");
 
@@ -425,7 +425,7 @@ int __must_check device_add_disk(struct device *parent, struct gendisk *disk,
 	 * registration.
 	 */
 	elevator_init_mq(disk->queue);
-	// print_str_guest("[WHAETFOX] (device_add_disk) elevator_init_mq finished\n");
+	// print_str_guest("[WHEATFOX] (device_add_disk) elevator_init_mq finished\n");
 
 	/* Mark bdev as having a submit_bio, if needed */
 	disk->part0->bd_has_submit_bio = disk->fops->submit_bio != NULL;
@@ -471,26 +471,26 @@ int __must_check device_add_disk(struct device *parent, struct gendisk *disk,
 	if (!(disk->flags & GENHD_FL_HIDDEN))
 		ddev->devt = MKDEV(disk->major, disk->first_minor);
 
-	// print_str_guest("[WHAETFOX] (device_add_disk) dev_set_name finished\n");
+	// print_str_guest("[WHEATFOX] (device_add_disk) dev_set_name finished\n");
 
 	ret = device_add(ddev);
 	if (ret)
 		goto out_free_ext_minor;
 
-	// print_str_guest("[WHAETFOX] (device_add_disk) device_add finished\n");
+	// print_str_guest("[WHEATFOX] (device_add_disk) device_add finished\n");
 
 	ret = disk_alloc_events(disk);
 	if (ret)
 		goto out_device_del;
 
-	// print_str_guest("[WHAETFOX] (device_add_disk) disk_alloc_events finished\n");
+	// print_str_guest("[WHEATFOX] (device_add_disk) disk_alloc_events finished\n");
 
 	ret = sysfs_create_link(block_depr, &ddev->kobj,
 				kobject_name(&ddev->kobj));
 	if (ret)
 		goto out_device_del;
 
-	// print_str_guest("[WHAETFOX] (device_add_disk) sysfs_create_link finished\n");
+	// print_str_guest("[WHEATFOX] (device_add_disk) sysfs_create_link finished\n");
 
 	/*
 	 * avoid probable deadlock caused by allocating memory with
@@ -499,7 +499,7 @@ int __must_check device_add_disk(struct device *parent, struct gendisk *disk,
 	 */
 	pm_runtime_set_memalloc_noio(ddev, true);
 
-	// print_str_guest("[WHAETFOX] (device_add_disk) pm_runtime_set_memalloc_noio finished\n");
+	// print_str_guest("[WHEATFOX] (device_add_disk) pm_runtime_set_memalloc_noio finished\n");
 
 	disk->part0->bd_holder_dir =
 		kobject_create_and_add("holders", &ddev->kobj);
@@ -517,7 +517,7 @@ int __must_check device_add_disk(struct device *parent, struct gendisk *disk,
 	if (ret)
 		goto out_put_slave_dir;
 
-	// print_str_guest("[WHAETFOX] (device_add_disk) blk_register_queue finished\n");
+	// print_str_guest("[WHEATFOX] (device_add_disk) blk_register_queue finished\n");
 
 	if (!(disk->flags & GENHD_FL_HIDDEN)) {
 		ret = bdi_register(disk->bdi, "%u:%u",

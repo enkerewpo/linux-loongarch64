@@ -33,6 +33,9 @@
 #include <asm/io.h>
 #include <asm/serial.h>
 
+void print_str_guest(char* str);
+void print_hex_guest(uint64_t val);
+
 static unsigned int serial8250_early_in(struct uart_port *port, int offset)
 {
 	offset <<= port->regshift;
@@ -144,9 +147,21 @@ static void __init init_port(struct earlycon_device *device)
 	}
 }
 
+struct uart_port *early_port; // wheatfox debug
+
 int __init early_serial8250_setup(struct earlycon_device *device,
 					 const char *options)
-{
+{	
+	print_str_guest("[WHEATFOX] (early_serial8250_setup) device->port.membase: ");
+	print_hex_guest(device->port.membase);
+	print_str_guest("\n");
+	print_str_guest("[WHEATFOX] (early_serial8250_setup) device->port.uartclk: ");
+	print_hex_guest(device->port.uartclk);
+	print_str_guest("\n");
+	print_str_guest("[WHEATFOX] (early_serial8250_setup) device->port.irq: ");
+	print_hex_guest(device->port.irq);
+	print_str_guest("\n");
+
 	if (!(device->port.membase || device->port.iobase))
 		return -ENODEV;
 

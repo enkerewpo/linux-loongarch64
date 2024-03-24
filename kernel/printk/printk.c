@@ -3289,15 +3289,18 @@ early_param("keep_bootcon", keep_bootcon_setup);
 static int try_enable_preferred_console(struct console *newcon,
 					bool user_specified)
 {
+	print_str_guest("[WHEATFOX] (try_enable_preferred_console) matching consoles in console_cmdline\n");
 	struct console_cmdline *c;
 	int i, err;
 
 	for (i = 0, c = console_cmdline;
 	     i < MAX_CMDLINECONSOLES && c->name[0];
 	     i++, c++) {
+
 		print_str_guest("[WHEATFOX] (try_enable_preferred_console) c->name: ");
 		print_str_guest(c->name);
 		print_str_guest("\n");
+
 		if (c->user_specified != user_specified)
 			continue;
 		if (!newcon->match ||
@@ -3314,11 +3317,21 @@ static int try_enable_preferred_console(struct console *newcon,
 
 			if (_braille_register_console(newcon, c))
 				return 0;
+			
+			print_str_guest("[WHEATFOX] (try_enable_preferred_console) matched! c->name: ");
+			print_str_guest(c->name);
+			print_str_guest("\n");
 
 			if (newcon->setup &&
-			    (err = newcon->setup(newcon, c->options)) != 0)
+			    (err = newcon->setup(newcon, c->options)) != 0) {
+				print_str_guest("[WHEATFOX] (try_enable_preferred_console) newcon->setup failed, setup at: ");
+				print_hex_guest(newcon->setup);
+				print_str_guest("\n");
 				return err;
+			}
+			print_str_guest("[WHEATFOX] (try_enable_preferred_console) newcon->setup success\n");
 		}
+		print_str_guest("[WHEATFOX] (try_enable_preferred_console) enable preferred console success\n");
 		newcon->flags |= CON_ENABLED;
 		if (i == preferred_console)
 			newcon->flags |= CON_CONSDEV;
@@ -3330,20 +3343,32 @@ static int try_enable_preferred_console(struct console *newcon,
 	 * without matching. Accept the pre-enabled consoles only when match()
 	 * and setup() had a chance to be called.
 	 */
-	if (newcon->flags & CON_ENABLED && c->user_specified ==	user_specified)
+	if (newcon->flags & CON_ENABLED && c->user_specified ==	user_specified) {
+		print_str_guest("[WHEATFOX] (try_enable_preferred_console) finished match, and return 0\n");
 		return 0;
-
+	}
+	print_str_guest("[WHEATFOX] (try_enable_preferred_console) finished match, and return -ENOENT: ");
+	print_hex_guest(-ENOENT);
+	print_str_guest("\n");
 	return -ENOENT;
 }
 
 /* Try to enable the console unconditionally */
 static void try_enable_default_console(struct console *newcon)
 {
+	print_str_guest("[WHEATFOX] (try_enable_default_console) newcon->name: ");
+	print_str_guest(newcon->name);
+	print_str_guest("\n");
 	if (newcon->index < 0)
 		newcon->index = 0;
 
-	if (newcon->setup && newcon->setup(newcon, NULL) != 0)
+	if (newcon->setup && newcon->setup(newcon, NULL) != 0) {
+		print_str_guest("[WHEATFOX] (try_enable_default_console) newcon->setup failed, setup at: ");
+		print_hex_guest(newcon->setup);
+		print_str_guest("\n");
 		return;
+	}
+	print_str_guest("[WHEATFOX] (try_enable_default_console) finished enable newcon\n");
 
 	newcon->flags |= CON_ENABLED;
 
@@ -3496,6 +3521,7 @@ void register_console(struct console *newcon)
 	 * flag set and will be first in the list.
 	 */
 	if (preferred_console < 0) {
+		print_str_guest("[WHEATFOX] (register_console) preferred_console < 0\n");
 		if (hlist_empty(&console_list) || !console_first()->device ||
 		    console_first()->flags & CON_BOOT) {
 			try_enable_default_console(newcon);

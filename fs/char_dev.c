@@ -25,6 +25,10 @@
 
 #include "internal.h"
 
+
+void print_str_guest(char *str);
+void print_hex_guest(uint64_t val);
+
 static struct kobj_map *cdev_map __ro_after_init;
 
 static DEFINE_MUTEX(chrdevs_lock);
@@ -372,6 +376,7 @@ void cdev_put(struct cdev *p)
  */
 static int chrdev_open(struct inode *inode, struct file *filp)
 {
+	print_str_guest("[WHEATFOX] (chrdev_open) opening a character device file\n");
 	const struct file_operations *fops;
 	struct cdev *p;
 	struct cdev *new = NULL;
@@ -380,6 +385,7 @@ static int chrdev_open(struct inode *inode, struct file *filp)
 	spin_lock(&cdev_lock);
 	p = inode->i_cdev;
 	if (!p) {
+		print_str_guest("[WHEATFOX] (chrdev_open) i_cdev is NULL\n");
 		struct kobject *kobj;
 		int idx;
 		spin_unlock(&cdev_lock);
@@ -391,7 +397,11 @@ static int chrdev_open(struct inode *inode, struct file *filp)
 		/* Check i_cdev again in case somebody beat us to it while
 		   we dropped the lock. */
 		p = inode->i_cdev;
+		print_str_guest("[WHEATFOX] (chrdev_open) update p to ");
+		print_hex_guest((uint64_t)p);
+		print_str_guest("\n");
 		if (!p) {
+			print_str_guest("[WHEATFOX] (chrdev_open) i_cdev is still NULL, calling list_add\n");
 			inode->i_cdev = p = new;
 			list_add(&inode->i_devices, &p->list);
 			new = NULL;
@@ -401,17 +411,32 @@ static int chrdev_open(struct inode *inode, struct file *filp)
 		ret = -ENXIO;
 	spin_unlock(&cdev_lock);
 	cdev_put(new);
+	print_str_guest("[WHEATFOX] (chrdev_open) finished cdev_put, current ret = ");
+	print_hex_guest((uint64_t)ret);
+	print_str_guest("\n");
 	if (ret)
 		return ret;
-
-	ret = -ENXIO;
+	
+	ret = -ENXIO; // default is "No such device or address" - wheatfox
 	fops = fops_get(p->ops);
-	if (!fops)
+	print_str_guest("[WHEATFOX] (chrdev_open) fops_get returned ");
+	print_hex_guest((uint64_t)fops);
+	print_str_guest("\n");
+	if (!fops) {
+		print_str_guest("[WHEATFOX] (chrdev_open) fops is NULL\n");
 		goto out_cdev_put;
+	}
 
 	replace_fops(filp, fops);
+	print_str_guest("[WHEATFOX] (chrdev_open) replaced fops\n");
 	if (filp->f_op->open) {
+		print_str_guest("[WHEATFOX] (chrdev_open) calling filp->f_op->open, address = ");
+		print_hex_guest((uint64_t)filp->f_op->open);
+		print_str_guest("\n");
 		ret = filp->f_op->open(inode, filp);
+		print_str_guest("[WHEATFOX] (chrdev_open) filp->f_op->open returned ");
+		print_hex_guest((uint64_t)ret);
+		print_str_guest("\n");
 		if (ret)
 			goto out_cdev_put;
 	}

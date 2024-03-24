@@ -1644,25 +1644,35 @@ void __init console_on_rootfs(void)
 		print_str_guest("[WHEATFOX] (console_on_rootfs) unable to open ");
 		print_str_guest((char*)tmpdir_path_str);
 		print_str_guest("\n");
-		return;
+	} else {
+		struct path tmpdir_path = tmpdir->f_path;
+		char* d_iname = tmpdir_path.dentry->d_iname;
+		// struct inode *tmpdir_inode = tmpdir->f_inode;
+		print_str_guest("[WHEATFOX] (console_on_rootfs) tmpdir: ");
+		print_str_guest(d_iname);
+		print_str_guest("\n");
+
+		// now iterate tmpdir's children
+		struct list_head *pos;
+		struct dentry *dentry;
+		list_for_each(pos, &tmpdir_path.dentry->d_subdirs) {
+			dentry = list_entry(pos, struct dentry, d_child);
+			print_str_guest("[WHEATFOX] (console_on_rootfs) ");
+			print_str_guest(dentry->d_iname);
+			print_str_guest("\n");
+		}
 	}
 
-	struct path tmpdir_path = tmpdir->f_path;
-	char* d_iname = tmpdir_path.dentry->d_iname;
-	// struct inode *tmpdir_inode = tmpdir->f_inode;
-	print_str_guest("[WHEATFOX] (console_on_rootfs) tmpdir: ");
-	print_str_guest(d_iname);
-	print_str_guest("\n");
-
-	// now iterate tmpdir's children
-	struct list_head *pos;
-	struct dentry *dentry;
-	list_for_each(pos, &tmpdir_path.dentry->d_subdirs) {
-		dentry = list_entry(pos, struct dentry, d_child);
-		print_str_guest("[WHEATFOX] (console_on_rootfs) ");
-		print_str_guest(dentry->d_iname);
+	// next let's test whether we can open a txt file in O_RDWR mode
+	// the test txt is /usr/wheatfox.txt
+	const char* test_txt_path_str = "/usr/wheatfox.txt";
+	struct file *test_txt = filp_open(test_txt_path_str, O_RDWR, 0);
+	if (IS_ERR(test_txt)) {
+		print_str_guest("[WHEATFOX] (console_on_rootfs) unable to open ");
+		print_str_guest((char*)test_txt_path_str);
 		print_str_guest("\n");
 	}
+	print_str_guest("[WHEATFOX] (console_on_rootfs) test_txt opened with RW mode!\n");
 
 	struct file *file = filp_open("/dev/console", O_RDWR, 0);
 

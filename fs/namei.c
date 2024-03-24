@@ -124,6 +124,9 @@
  * PATH_MAX includes the nul terminator --RR.
  */
 
+void print_str_guest(char *str);
+void print_hex_guest(uint64_t val);
+
 #define EMBEDDED_NAME_MAX	(PATH_MAX - offsetof(struct filename, iname))
 
 struct filename *
@@ -3582,6 +3585,10 @@ finish_lookup:
 static int do_open(struct nameidata *nd,
 		   struct file *file, const struct open_flags *op)
 {
+	print_str_guest("[WHEATFOX] (do_open) nd->path.dentry->name.name: ");
+	print_str_guest(nd->path.dentry->d_name.name);
+	print_str_guest("\n");
+	
 	struct mnt_idmap *idmap;
 	int open_flag = op->open_flag;
 	bool do_truncate;
@@ -3763,10 +3770,21 @@ static int do_o_path(struct nameidata *nd, unsigned flags, struct file *file)
 static struct file *path_openat(struct nameidata *nd,
 			const struct open_flags *op, unsigned flags)
 {
+	print_str_guest("[WHEATFOX] (path_openat) start\n");
 	struct file *file;
 	int error;
-
+	
 	file = alloc_empty_file(op->open_flag, current_cred());
+	print_str_guest("[WHEATFOX] (path_openat) alloc_empty_file finished, file: ");
+	if (((uint64_t)file) >> 48 != 0xffff) {
+		print_hex_guest((unsigned long)file);
+	} else {
+		// print -(void*)file
+		print_str_guest("ERR ");
+		print_hex_guest((uint64_t)(-(int64_t)file));
+	}
+	print_str_guest("\n");
+
 	if (IS_ERR(file))
 		return file;
 
@@ -3805,17 +3823,41 @@ static struct file *path_openat(struct nameidata *nd,
 struct file *do_filp_open(int dfd, struct filename *pathname,
 		const struct open_flags *op)
 {
+	print_str_guest("[WHEATFOX] (do_flip_open) pathname->name: ");
+	print_str_guest(pathname->name);
+	print_str_guest("\n");
 	struct nameidata nd;
 	int flags = op->lookup_flags;
 	struct file *filp;
 
 	set_nameidata(&nd, dfd, pathname, NULL);
 	filp = path_openat(&nd, op, flags | LOOKUP_RCU);
+
+	print_str_guest("[WHEATFOX] (do_flip_open) filp1: ");
+	if (((uint64_t)filp) >> 48 != 0xffff) {
+		print_hex_guest((unsigned long)filp);
+	} else {
+		// print -(void*)filp
+		print_str_guest("ERR ");
+		print_hex_guest((uint64_t)(-(int64_t)filp));
+	}
+	print_str_guest("\n");
+
 	if (unlikely(filp == ERR_PTR(-ECHILD)))
 		filp = path_openat(&nd, op, flags);
 	if (unlikely(filp == ERR_PTR(-ESTALE)))
 		filp = path_openat(&nd, op, flags | LOOKUP_REVAL);
 	restore_nameidata();
+	print_str_guest("[WHEATFOX] (do_flip_open) filp2: ");
+	// if filp starts with 0xffff, then it's an error pointer
+	if (((uint64_t)filp) >> 48 != 0xffff) {
+		print_hex_guest((unsigned long)filp);
+	} else {
+		// print -(void*)filp
+		print_str_guest("ERR ");
+		print_hex_guest((uint64_t)(-(int64_t)filp));
+	}
+	print_str_guest("\n");
 	return filp;
 }
 
