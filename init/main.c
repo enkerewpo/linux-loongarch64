@@ -115,6 +115,7 @@ void print_char(char c);
 void init_serial(void);
 
 void print_str_guest(char *str) {
+#ifdef DEBUG_WHEATFOX
   while (*str) {
     print_char(*str);
     if (*str == '\n') {
@@ -122,9 +123,11 @@ void print_str_guest(char *str) {
     }
     str++;
   }
+#endif
 }
 
 void print_hex_guest(uint64_t val) {
+#ifdef DEBUG_WHEATFOX
   char buf[17];
   buf[16] = '\0';
   for (int i = 0; i < 16; i++) {
@@ -132,6 +135,7 @@ void print_hex_guest(uint64_t val) {
   }
   print_str_guest("0x");
   print_str_guest(buf);
+#endif
 }
 
 static int kernel_init(void *);
