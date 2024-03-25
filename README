@@ -4,6 +4,8 @@ Linux kernel
 wheatfox's instructions:
 
 1. use `build.sh` to build linux kernel targeting loongarch64, you can use `build.sh help` to check avaliable commands.
+2. the initramfs's rootfs.cpio.gz's location is hardcoded into config file, you need to specify it in `build.sh menuconfig`'s General Setup!
+3. once you've set your desired initramfs gzip file, it will be save into .config for later use in compiling linux kernel.
 
 There are several guides for kernel developers and users. These guides can
 be rendered in a number of formats, like HTML and PDF. Please read

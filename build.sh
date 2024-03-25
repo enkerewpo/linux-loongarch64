@@ -16,7 +16,8 @@ if [ "$1" = "help" ] || [ "$1" = "-h" ] || [ "$1" = "--help" ] || [ "$1" = "" ];
     echo "    menuconfig          - Run menuconfig"
     echo "    save                - Save defconfig"
     echo "    kernel              - Build kernel"
-    echo "    copy                - Copy kernel to hvisor(loongarch64)'s images folder"
+    echo "    copy                - Copy kernel to hvisor(loongarch64)'s images folder(wheatfox's path)"
+    echo "    copy2               - Copy kernel to hvisor(loongarch64)'s images folder(BoneInscri's path)"
     exit 0
 fi
 
@@ -48,9 +49,9 @@ if [ "$1" = "kernel" ]; then
     echo "Building kernel"
     make $ARGS -j$NUM_JOBS
     # objdump the asm of vmlinux, dump all sections' data
-    loongarch64-unknown-linux-gnu-objdump -D vmlinux > vmlinux.asm
+    loongarch64-unknown-linux-gnu-objdump -D vmlinux >vmlinux.asm
     # readelf
-    loongarch64-unknown-linux-gnu-readelf -a vmlinux > vmlinux.readelf.txt
+    loongarch64-unknown-linux-gnu-readelf -a vmlinux >vmlinux.readelf.txt
     exit 0
 fi
 
@@ -58,5 +59,12 @@ HVISOR_SRC=/home/wheatfox/Documents/Code/loongvisor
 if [ "$1" = "copy" ]; then
     echo "Copying kernel to hvisor(loongarch64)'s images folder: $HVISOR_SRC/images/vmlinux"
     cp vmlinux $HVISOR_SRC/images/vmlinux
+    exit 0
+fi
+
+HVISOR_SRC2=/home/BoneInscri/xx # you can set this to your own loongvisor source path
+if [ "$1" = "copy2" ]; then
+    echo "Copying kernel to hvisor(loongarch64)'s images folder: $HVISOR_SRC2/images/vmlinux"
+    cp vmlinux $HVISOR_SRC2/images/vmlinux
     exit 0
 fi
