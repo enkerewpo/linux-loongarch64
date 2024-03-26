@@ -16,8 +16,13 @@ if [ "$1" = "help" ] || [ "$1" = "-h" ] || [ "$1" = "--help" ] || [ "$1" = "" ];
     echo "    menuconfig          - Run menuconfig"
     echo "    save                - Save defconfig"
     echo "    kernel              - Build kernel"
+
+    echo "    copydtb             - Copy dtb to arch/loongarch/boot/loongson3_ls7a.dtb(wheatfox's path)"
+    echo "    copydtb2            - Copy dtb to arch/loongarch/boot/loongson3_ls7a.dtb(BoneInscri's path)"
+
     echo "    copy                - Copy kernel to hvisor(loongarch64)'s images folder(wheatfox's path)"
     echo "    copy2               - Copy kernel to hvisor(loongarch64)'s images folder(BoneInscri's path)"
+
     exit 0
 fi
 
@@ -59,6 +64,7 @@ HVISOR_SRC=/home/wheatfox/Documents/Code/loongvisor
 if [ "$1" = "copy" ]; then
     echo "Copying kernel to hvisor(loongarch64)'s images folder: $HVISOR_SRC/images/vmlinux"
     cp vmlinux $HVISOR_SRC/images/vmlinux
+    echo "Finished copying kernel"
     exit 0
 fi
 
@@ -66,5 +72,22 @@ HVISOR_SRC2=/home/BoneInscri/xx # you can set this to your own loongvisor source
 if [ "$1" = "copy2" ]; then
     echo "Copying kernel to hvisor(loongarch64)'s images folder: $HVISOR_SRC2/images/vmlinux"
     cp vmlinux $HVISOR_SRC2/images/vmlinux
+    echo "Finished copying kernel"
+    exit 0
+fi
+
+HVISOR_DTB=/home/wheatfox/Documents/Code/loongvisor/dts/loongson3_ls7a.dtb
+if [ "$1" = "copydtb" ]; then
+    echo "Copying dtb to arch/loongarch/boot/loongson3_ls7a.dtb"
+    cp $HVISOR_DTB arch/loongarch/boot/loongson3_ls7a.dtb
+    echo "Finished copying dtb"
+    exit 0
+fi
+
+HVISOR_DTB2=/home/BoneInscri/xx/dts/loongson3_ls7a.dtb # you can set this to your own loongvisor vmlinux dtb path
+if [ "$1" = "copydtb2" ]; then
+    echo "Copying dtb to arch/loongarch/boot/loongson3_ls7a.dtb"
+    cp $HVISOR_DTB2 arch/loongarch/boot/loongson3_ls7a.dtb
+    echo "Finished copying dtb"
     exit 0
 fi
