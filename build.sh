@@ -16,13 +16,8 @@ if [ "$1" = "help" ] || [ "$1" = "-h" ] || [ "$1" = "--help" ] || [ "$1" = "" ];
     echo "    menuconfig          - Run menuconfig"
     echo "    save                - Save defconfig"
     echo "    kernel              - Build kernel"
-
-    echo "    copydtb             - Copy dtb to arch/loongarch/boot/loongson3_ls7a.dtb(wheatfox's path)"
-    echo "    copydtb2            - Copy dtb to arch/loongarch/boot/loongson3_ls7a.dtb(BoneInscri's path)"
-
-    echo "    copy                - Copy kernel to hvisor(loongarch64)'s images folder(wheatfox's path)"
-    echo "    copy2               - Copy kernel to hvisor(loongarch64)'s images folder(BoneInscri's path)"
-
+    echo "    copydtb             - Copy dtb to arch/loongarch/boot/loongson3_ls7a.dtb"
+    echo "    copy                - Copy kernel to hvisor(loongarch64)'s images folder"
     exit 0
 fi
 
@@ -60,7 +55,19 @@ if [ "$1" = "kernel" ]; then
     exit 0
 fi
 
-HVISOR_SRC=/home/wheatfox/Documents/Code/loongvisor
+# HVISOR_SRC=/home/wheatfox/Documents/Code/loongvisor
+# find HVISOR_SRC in the environment variables if not set warning
+if [ -z "$HVISOR_SRC" ]; then
+    echo "HVISOR_SRC is not set, please set it to the path of the hvisor source code"
+    echo "you can add it in your .bashrc or .zshrc file or temporarily set it like this:"
+    echo "--"
+    echo "export HVISOR_SRC=/home/wheatfox/Documents/Code/loongvisor"
+    echo "--"
+    exit 1
+fi
+HVISOR_SRC=$(realpath $HVISOR_SRC)
+echo "HVISOR_SRC is set to $HVISOR_SRC"
+
 if [ "$1" = "copy" ]; then
     echo "Copying kernel to hvisor(loongarch64)'s images folder: $HVISOR_SRC/images/vmlinux"
     cp vmlinux $HVISOR_SRC/images/vmlinux
@@ -68,26 +75,10 @@ if [ "$1" = "copy" ]; then
     exit 0
 fi
 
-HVISOR_SRC2=/home/BoneInscri/xx # you can set this to your own loongvisor source path
-if [ "$1" = "copy2" ]; then
-    echo "Copying kernel to hvisor(loongarch64)'s images folder: $HVISOR_SRC2/images/vmlinux"
-    cp vmlinux $HVISOR_SRC2/images/vmlinux
-    echo "Finished copying kernel"
-    exit 0
-fi
-
-HVISOR_DTB=/home/wheatfox/Documents/Code/loongvisor/dts/loongson3_ls7a.dtb
+HVISOR_DTB=$HVISOR_SRC/dts/loongson3_ls7a.dtb
 if [ "$1" = "copydtb" ]; then
-    echo "Copying dtb to arch/loongarch/boot/loongson3_ls7a.dtb"
+    echo "Copying dtb to arch/loongarch/boot/loongson3_ls7a.dtb from $HVISOR_DTB"
     cp $HVISOR_DTB arch/loongarch/boot/loongson3_ls7a.dtb
-    echo "Finished copying dtb"
-    exit 0
-fi
-
-HVISOR_DTB2=/home/BoneInscri/xx/dts/loongson3_ls7a.dtb # you can set this to your own loongvisor vmlinux dtb path
-if [ "$1" = "copydtb2" ]; then
-    echo "Copying dtb to arch/loongarch/boot/loongson3_ls7a.dtb"
-    cp $HVISOR_DTB2 arch/loongarch/boot/loongson3_ls7a.dtb
     echo "Finished copying dtb"
     exit 0
 fi
