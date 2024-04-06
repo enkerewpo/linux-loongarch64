@@ -1,1 +1,4 @@
-./build.sh kernel && ./build.sh copy
+export HVISOR_SRC=/home/wheatfox/Documents/Code/loongvisor
+./build.sh copydtb
+./build.sh kernel
+./build.sh copy
