@@ -114,6 +114,8 @@
 void print_char(char c);
 void init_serial(void);
 
+#define DEBUG_WHEATFOX
+
 void print_str_guest(char *str) {
 #ifdef DEBUG_WHEATFOX
   while (*str) {
