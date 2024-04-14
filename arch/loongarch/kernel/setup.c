@@ -652,9 +652,12 @@ void __init setup_arch(char **cmdline_p)
 	print_str_guest("[WHEATFOX] (setup_arch) arch_mem_init end\n");
 
 	resource_init();
+	print_str_guest("[WHEATFOX] (setup_arch) resource_init end\n");
 #ifdef CONFIG_SMP
+	print_str_guest("[WHEATFOX] (setup_arch) CONFIG_SMP is enabled\n");
 	plat_smp_setup();
 	prefill_possible_map();
+	print_str_guest("[WHEATFOX] (setup_arch) end of smp setup\n");
 #endif
 
 	paging_init();
