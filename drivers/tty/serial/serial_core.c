@@ -142,6 +142,10 @@ static void __uart_start(struct uart_state *state)
 	struct serial_port_device *port_dev;
 	int err;
 
+	print_str_guest("[WHEATFOX] (__uart_start) port membase: ");
+	print_hex_guest((uint64_t)port->membase);
+	print_str_guest("\n");
+
 	if (!port || port->flags & UPF_DEAD || uart_tx_stopped(port))
 		return;
 
@@ -163,6 +167,7 @@ static void __uart_start(struct uart_state *state)
 		port->ops->start_tx(port);
 	pm_runtime_mark_last_busy(&port_dev->dev);
 	pm_runtime_put_autosuspend(&port_dev->dev);
+	print_str_guest("[WHEATFOX] (__uart_start) after pm_runtime_put_autosuspend\n");
 }
 
 static void uart_start(struct tty_struct *tty)
@@ -589,6 +594,10 @@ static ssize_t uart_write(struct tty_struct *tty, const u8 *buf, size_t count)
 	unsigned long flags;
 	int c, ret = 0;
 
+	print_str_guest("[WHEATFOX] (uart_write) count: ");
+	print_hex_guest(count);
+	print_str_guest("\n");
+
 	/*
 	 * This means you called this function _after_ the port was
 	 * closed.  No cookie for you.
@@ -603,21 +612,40 @@ static ssize_t uart_write(struct tty_struct *tty, const u8 *buf, size_t count)
 		return 0;
 	}
 
+	print_str_guest("[WHEATFOX] (uart_write) port membase: ");
+	print_hex_guest((uint64_t)port->membase);
+	print_str_guest("\n");
+
 	while (port) {
 		c = CIRC_SPACE_TO_END(circ->head, circ->tail, UART_XMIT_SIZE);
 		if (count < c)
 			c = count;
 		if (c <= 0)
 			break;
+		print_str_guest("[WHEATFOX] (uart_write) memcpy(");
+		print_hex_guest((uint64_t)(circ->buf + circ->head));
+		print_str_guest(", ");
+		print_hex_guest((uint64_t)buf);
+		print_str_guest(", ");
+		print_hex_guest(c);
+		print_str_guest(")\n");
 		memcpy(circ->buf + circ->head, buf, c);
 		circ->head = (circ->head + c) & (UART_XMIT_SIZE - 1);
 		buf += c;
 		count -= c;
 		ret += c;
 	}
+	print_str_guest("[WHEATFOX] (uart_write) after while, count -> ");
+	print_hex_guest(count);
+	print_str_guest("\n");
 
 	__uart_start(state);
 	uart_port_unlock(port, flags);
+
+	print_str_guest("[WHEATFOX] (uart_write) ret: ");
+	print_hex_guest(ret);
+	print_str_guest("\n");
+
 	return ret;
 }
 

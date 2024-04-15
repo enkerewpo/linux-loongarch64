@@ -25,6 +25,9 @@
 #include <linux/uaccess.h>
 #include <asm/unistd.h>
 
+void print_str_guest(char *str);
+void print_hex_guest(uint64_t val);
+
 const struct file_operations generic_ro_fops = {
 	.llseek		= generic_file_llseek,
 	.read_iter	= generic_file_read_iter,
@@ -564,6 +567,18 @@ EXPORT_SYMBOL(kernel_write);
 ssize_t vfs_write(struct file *file, const char __user *buf, size_t count, loff_t *pos)
 {
 	ssize_t ret;
+
+	print_str_guest("[WHEATFOX] (vfs_write) filename: ");
+	print_str_guest(file->f_path.dentry->d_name.name);
+	print_str_guest(", write_op_addr: ");
+	print_hex_guest((uint64_t)file->f_op->write);
+	print_str_guest(", write_iter_op_addr: ");
+	print_hex_guest((uint64_t)file->f_op->write_iter);
+	print_str_guest(", pos: ");
+	print_hex_guest((uint64_t)pos);
+	print_str_guest(", count: ");
+	print_hex_guest((uint64_t)count);
+	print_str_guest("\n");
 
 	if (!(file->f_mode & FMODE_WRITE))
 		return -EBADF;

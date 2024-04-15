@@ -53,6 +53,9 @@
 
 #include "access-helper.h"
 
+void print_str_guest(char *str);
+void print_hex_guest(uint64_t val);
+
 static void show_backtrace(struct task_struct *task, const struct pt_regs *regs,
 			   const char *loglvl, bool user)
 {
@@ -1037,6 +1040,8 @@ asmlinkage void cache_parity_error(void)
 asmlinkage void noinstr handle_loongarch_irq(struct pt_regs *regs)
 {
 	struct pt_regs *old_regs;
+
+	// print_str_guest("\n[WHEATFOX] (handle_loongarch_irq) start\n");
 
 	irq_enter_rcu();
 	old_regs = set_irq_regs(regs);

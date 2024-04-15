@@ -50,6 +50,9 @@
 
 #include "tty.h"
 
+void print_str_guest(char *str);
+void print_hex_guest(uint64_t val);
+
 /*
  * Until this number of characters is queued in the xmit buffer, select will
  * return "we have room for writes".
@@ -526,6 +529,8 @@ static ssize_t process_output_block(struct tty_struct *tty,
 	int	i;
 	const u8 *cp;
 
+	print_str_guest("[WHEATFOX] (process_output_block) start\n");
+
 	mutex_lock(&ldata->output_lock);
 
 	space = tty_write_room(tty);
@@ -571,9 +576,16 @@ static ssize_t process_output_block(struct tty_struct *tty,
 		}
 	}
 break_out:
+	print_str_guest("[WHEATFOX] (process_output_block) break_out\n");
+	print_str_guest("[WHEATFOX] (process_output_block) calling write at: ");
+	print_hex_guest(tty->ops->write);
+	print_str_guest("\n");
 	i = tty->ops->write(tty, buf, i);
 
 	mutex_unlock(&ldata->output_lock);
+	print_str_guest("[WHEATFOX] (process_output_block) end, returning ");
+	print_hex_guest(i);
+	print_str_guest("\n");
 	return i;
 }
 
@@ -2352,6 +2364,16 @@ static ssize_t n_tty_write(struct tty_struct *tty, struct file *file,
 	DEFINE_WAIT_FUNC(wait, woken_wake_function);
 	ssize_t num, retval = 0;
 
+	print_str_guest("[WHEATFOX] (n_tty_write) tty->name: ");
+	print_str_guest(tty->name);
+	print_str_guest(", filename: ");
+	print_str_guest(file->f_path.dentry->d_name.name);
+	print_str_guest(", buf: ");
+	print_hex_guest((unsigned long)buf);
+	print_str_guest(", nr: ");
+	print_hex_guest(nr);
+	print_str_guest("\n");
+
 	/* Job control check -- must be done at start (POSIX.1 7.1.1.4). */
 	if (L_TOSTOP(tty) && file->f_op->write_iter != redirected_tty_write) {
 		retval = tty_check_change(tty);
@@ -2365,6 +2387,9 @@ static ssize_t n_tty_write(struct tty_struct *tty, struct file *file,
 	process_echoes(tty);
 
 	add_wait_queue(&tty->write_wait, &wait);
+
+	print_str_guest("[WHEATFOX] (n_tty_write) after add_wait_queue\n");
+
 	while (1) {
 		if (signal_pending(current)) {
 			retval = -ERESTARTSYS;
@@ -2375,6 +2400,7 @@ static ssize_t n_tty_write(struct tty_struct *tty, struct file *file,
 			break;
 		}
 		if (O_OPOST(tty)) {
+			print_str_guest("[WHEATFOX] (n_tty_write) in OPOST\n");
 			while (nr > 0) {
 				num = process_output_block(tty, b, nr);
 				if (num < 0) {
@@ -2395,10 +2421,14 @@ static ssize_t n_tty_write(struct tty_struct *tty, struct file *file,
 				tty->ops->flush_chars(tty);
 		} else {
 			struct n_tty_data *ldata = tty->disc_data;
-
+			print_str_guest("[WHEATFOX] (n_tty_write) calling while write\n");
 			while (nr > 0) {
 				mutex_lock(&ldata->output_lock);
+				print_str_guest("[WHEATFOX] (n_tty_write) calling tty->ops->write\n");
 				num = tty->ops->write(tty, b, nr);
+				print_str_guest("[WHEATFOX] (n_tty_write) write returned: ");
+				print_hex_guest(num);
+				print_str_guest("\n");
 				mutex_unlock(&ldata->output_lock);
 				if (num < 0) {
 					retval = num;
@@ -2423,6 +2453,7 @@ static ssize_t n_tty_write(struct tty_struct *tty, struct file *file,
 		down_read(&tty->termios_rwsem);
 	}
 break_out:
+	print_str_guest("[WHEATFOX] (n_tty_write) break_out\n");
 	remove_wait_queue(&tty->write_wait, &wait);
 	if (nr && tty->fasync)
 		set_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);

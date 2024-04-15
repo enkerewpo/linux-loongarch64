@@ -76,6 +76,9 @@
 
 #include <trace/events/sched.h>
 
+void print_str_guest(char *str);
+void print_hex_guest(uint64_t val);
+
 static int bprm_creds_from_file(struct linux_binprm *bprm);
 
 int suid_dumpable = 0;
@@ -1767,11 +1770,21 @@ static int exec_binprm(struct linux_binprm *bprm)
 	pid_t old_pid, old_vpid;
 	int ret, depth;
 
+	print_str_guest("[WHEATFOX] (exec_binprm) start, bprm->filename: ");
+	print_str_guest(bprm->filename);
+	print_str_guest("\n");
+
 	/* Need to fetch pid before load_binary changes it */
 	old_pid = current->pid;
 	rcu_read_lock();
 	old_vpid = task_pid_nr_ns(current, task_active_pid_ns(current->parent));
 	rcu_read_unlock();
+
+	print_str_guest("[WHEATFOX] (exec_binprm) old_pid: ");
+	print_hex_guest(old_pid);
+	print_str_guest(", old_vpid: ");
+	print_hex_guest(old_vpid);
+	print_str_guest("\n");
 
 	/* This allows 4 levels of binfmt rewrites before failing hard. */
 	for (depth = 0;; depth++) {
@@ -1780,6 +1793,11 @@ static int exec_binprm(struct linux_binprm *bprm)
 			return -ELOOP;
 
 		ret = search_binary_handler(bprm);
+
+		print_str_guest("[WHEATFOX] (exec_binprm) search_binary_handler ret: ");
+		print_hex_guest(ret);
+		print_str_guest("\n");
+
 		if (ret < 0)
 			return ret;
 		if (!bprm->interpreter)
@@ -1800,10 +1818,14 @@ static int exec_binprm(struct linux_binprm *bprm)
 			fput(exec);
 	}
 
+	print_str_guest("[WHEATFOX] (exec_binprm) search_binary_handler done\n");
+
 	audit_bprm(bprm);
 	trace_sched_process_exec(current, old_pid, bprm);
 	ptrace_event(PTRACE_EVENT_EXEC, old_vpid);
 	proc_exec_connector(current);
+
+	print_str_guest("[WHEATFOX] (exec_binprm) return 0\n");
 	return 0;
 }
 
@@ -1815,6 +1837,8 @@ static int bprm_execve(struct linux_binprm *bprm,
 {
 	struct file *file;
 	int retval;
+
+	print_str_guest("[WHEATFOX] (bprm_execve) start\n");
 
 	retval = prepare_bprm_creds(bprm);
 	if (retval)
@@ -1833,6 +1857,10 @@ static int bprm_execve(struct linux_binprm *bprm,
 	retval = PTR_ERR(file);
 	if (IS_ERR(file))
 		goto out_unmark;
+
+	print_str_guest("[WHEATFOX] (bprm_execve) file: ");
+	print_str_guest(file->f_path.dentry->d_name.name);
+	print_str_guest("\n");
 
 	sched_exec();
 
@@ -1855,17 +1883,30 @@ static int bprm_execve(struct linux_binprm *bprm,
 		goto out;
 
 	retval = exec_binprm(bprm);
+
+	print_str_guest("[WHEATFOX] (bprm_execve) exec_binprm ret: ");
+	print_hex_guest(retval);
+	print_str_guest("\n");
+
 	if (retval < 0)
 		goto out;
 
 	sched_mm_cid_after_execve(current);
 	/* execve succeeded */
+
+	print_str_guest("[WHEATFOX] (bprm_execve) execve succeeded\n");
+
 	current->fs->in_exec = 0;
 	current->in_execve = 0;
 	rseq_execve(current);
 	user_events_execve(current);
 	acct_update_integrals(current);
 	task_numa_free(current, false);
+	
+	print_str_guest("[WHEATFOX] (bprm_execve) returning: ");
+	print_hex_guest(retval);
+	print_str_guest("\n");
+
 	return retval;
 
 out:
@@ -1875,6 +1916,7 @@ out:
 	 * signal if present otherwise terminate the process with
 	 * SIGSEGV.
 	 */
+	print_str_guest("[WHEATFOX] (bprm_execve) in out\n");
 	if (bprm->point_of_no_return && !fatal_signal_pending(current))
 		force_fatal_sig(SIGSEGV);
 
@@ -1979,6 +2021,10 @@ int kernel_execve(const char *kernel_filename,
 	int fd = AT_FDCWD;
 	int retval;
 
+	print_str_guest("[WHEATFOX] (kernel_execve) kernel_filename: ");
+	print_str_guest(kernel_filename);
+	print_str_guest("\n");
+
 	/* It is non-sense for kernel threads to call execve */
 	if (WARN_ON_ONCE(current->flags & PF_KTHREAD))
 		return -EINVAL;
@@ -2021,7 +2067,10 @@ int kernel_execve(const char *kernel_filename,
 	retval = copy_strings_kernel(bprm->argc, argv, bprm);
 	if (retval < 0)
 		goto out_free;
-
+	
+	print_str_guest("[WHEATFOX] (kernel_execve) bprm->filename: ");
+	print_str_guest(bprm->filename);
+	print_str_guest("\n");
 	retval = bprm_execve(bprm, fd, filename, 0);
 out_free:
 	free_bprm(bprm);

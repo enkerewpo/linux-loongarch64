@@ -966,6 +966,10 @@ static int do_dentry_open(struct file *f,
 		print_str_guest("[WHEATFOX] (do_dentry_open) open is NULL, using f_op->open, now: ");
 		print_hex_guest(open);
 		print_str_guest("\n");
+		// print f->f_op->write's location
+		print_str_guest("[WHEATFOX] (do_dentry_open) f->f_op->write: ");
+		print_hex_guest(f->f_op->write);
+		print_str_guest("\n");
 	}
 	if (open) {
 		print_str_guest("[WHEATFOX] (do_dentry_open) calling open\n");

@@ -973,7 +973,14 @@ static ssize_t iterate_tty_write(struct tty_ldisc *ld, struct tty_struct *tty,
 	size_t chunk, count = iov_iter_count(from);
 	ssize_t ret, written = 0;
 
+	print_str_guest("[WHEATFOX] (iterate_tty_write) start, calling tty_write_lock\n");
+
 	ret = tty_write_lock(tty, file->f_flags & O_NDELAY);
+
+	print_str_guest("[WHEATFOX] (iterate_tty_write) tty_write_lock returned: ");
+	print_hex_guest(ret);
+	print_str_guest("\n");
+
 	if (ret < 0)
 		return ret;
 
@@ -1013,6 +1020,8 @@ static ssize_t iterate_tty_write(struct tty_ldisc *ld, struct tty_struct *tty,
 		tty->write_buf = buf_chunk;
 	}
 
+	print_str_guest("[WHEATFOX] (iterate_tty_write) trying to write\n");
+
 	/* Do the write .. */
 	for (;;) {
 		size_t size = min(chunk, count);
@@ -1021,11 +1030,17 @@ static ssize_t iterate_tty_write(struct tty_ldisc *ld, struct tty_struct *tty,
 		if (copy_from_iter(tty->write_buf, size, from) != size)
 			break;
 
+		print_str_guest("[WHEATFOX] (iterate_tty_write) calling ld->ops->write (");
+		print_hex_guest((unsigned long)ld->ops->write);
+		print_str_guest(")\n");
 		ret = ld->ops->write(tty, file, tty->write_buf, size);
 		if (ret <= 0)
 			break;
 
 		written += ret;
+		print_str_guest("[WHEATFOX] (iterate_tty_write) written: ");
+		print_hex_guest(written);
+		print_str_guest("\n");
 		if (ret > size)
 			break;
 
@@ -1079,21 +1094,55 @@ static ssize_t file_tty_write(struct file *file, struct kiocb *iocb, struct iov_
 	struct tty_ldisc *ld;
 	ssize_t ret;
 
-	if (tty_paranoia_check(tty, file_inode(file), "tty_write"))
+	print_str_guest("[WHEATFOX] (file_tty_write) from->count: ");
+	print_hex_guest(from->count);
+	print_str_guest(", tty: ");
+	print_hex_guest((unsigned long)tty);
+	print_str_guest(", filename: ");
+	print_str_guest(file->f_path.dentry->d_name.name);
+	print_str_guest("\n");
+
+	if (tty_paranoia_check(tty, file_inode(file), "tty_write")) {
+		print_str_guest("[WHEATFOX] (file_tty_write) tty_paranoia_check failed\n");
 		return -EIO;
-	if (!tty || !tty->ops->write ||	tty_io_error(tty))
+	}
+	if (!tty || !tty->ops->write ||	tty_io_error(tty)) {
+		print_str_guest("[WHEATFOX] (file_tty_write) tty is NULL or tty_io_error\n");
 		return -EIO;
+	}
 	/* Short term debug to catch buggy drivers */
-	if (tty->ops->write_room == NULL)
+	if (tty->ops->write_room == NULL) {
+		print_str_guest("[WHEATFOX] (file_tty_write) missing write_room method\n");
 		tty_err(tty, "missing write_room method\n");
+	}
+
 	ld = tty_ldisc_ref_wait(tty);
-	if (!ld)
+
+	print_str_guest("[WHEATFOX] (file_tty_write) ld: ");
+	print_hex_guest((unsigned long)ld);
+	print_str_guest("\n");
+
+	if (!ld) {
+		print_str_guest("[WHEATFOX] (file_tty_write) ld is NULL\n");
+		print_str_guest("[WHEATFOX] (file_tty_write) calling hung_up_tty_write\n");
 		return hung_up_tty_write(iocb, from);
+	}
 	if (!ld->ops->write)
 		ret = -EIO;
-	else
+	else {
+		print_str_guest("[WHEATFOX] (file_tty_write) calling iterate_tty_write\n");
+		print_str_guest("[WHEATFOX] (file_tty_write) ld->ops->write: ");
+		print_hex_guest((unsigned long)ld->ops->write);
+		print_str_guest("\n");
 		ret = iterate_tty_write(ld, tty, file, from);
+	}
+
+	print_str_guest("[WHEATFOX] (file_tty_write) calling tty_ldisc_deref\n");
 	tty_ldisc_deref(ld);
+
+	print_str_guest("[WHEATFOX] (file_tty_write) ret: ");
+	print_hex_guest(ret);
+	print_str_guest("\n");
 	return ret;
 }
 
@@ -1120,6 +1169,10 @@ ssize_t redirected_tty_write(struct kiocb *iocb, struct iov_iter *iter)
 {
 	struct file *p = NULL;
 
+	print_str_guest("[WHEATFOX] (redirected_tty_write) iter->count: ");
+	print_hex_guest(iter->count);
+	print_str_guest("\n");
+
 	spin_lock(&redirect_lock);
 	if (redirect)
 		p = get_file(redirect);
@@ -1136,6 +1189,8 @@ ssize_t redirected_tty_write(struct kiocb *iocb, struct iov_iter *iter)
 		fput(p);
 		return res;
 	}
+
+	print_str_guest("[WHEATFOX] (redirected_tty_write) calling tty_write\n");
 	return tty_write(iocb, iter);
 }
 
@@ -1936,8 +1991,8 @@ static struct tty_driver *tty_lookup_driver(dev_t device, struct file *filp,
 	case MKDEV(TTYAUX_MAJOR, 1): {
 		print_str_guest("[WHEATFOX] (tty_lookup_driver) case MKDEV(TTYAUX_MAJOR, 1)\n");
 		struct tty_driver *console_driver = console_device(index);
-		print_str_guest("[WHEATFOX] (tty_lookup_driver) console_driver: ");
-		print_hex_guest((unsigned long)console_driver);
+		print_str_guest("[WHEATFOX] (tty_lookup_driver) console_driver.name: ");
+		print_str_guest(console_driver->name);
 		print_str_guest("\n");
 		if (console_driver) {
 			driver = tty_driver_kref_get(console_driver);
@@ -2061,7 +2116,7 @@ static struct tty_struct *tty_open_by_driver(dev_t device,
 	mutex_lock(&tty_mutex);
 	driver = tty_lookup_driver(device, filp, &index);
 	print_str_guest("[WHEATFOX] (tty_open_by_driver) tty_lookup_driver, driver: ");
-	print_hex_guest((unsigned long)driver);
+	print_str_guest(driver->name);
 	print_str_guest("\n");
 	if (IS_ERR(driver)) {
 		mutex_unlock(&tty_mutex);
