@@ -114,7 +114,7 @@
 void print_char(char c);
 void init_serial(void);
 
-#define DEBUG_WHEATFOX
+// #define DEBUG_WHEATFOX
 
 void print_str_guest(char *str) {
 #ifdef DEBUG_WHEATFOX
@@ -126,6 +126,16 @@ void print_str_guest(char *str) {
     str++;
   }
 #endif
+}
+
+void print_str(char *str, int len) {
+  for (int i = 0; i < len; i++) {
+	char c = str[i];
+	print_char(c);
+	if (c == '\n') {
+	  print_char('\r');
+	}
+  }
 }
 
 void print_hex_guest(uint64_t val) {

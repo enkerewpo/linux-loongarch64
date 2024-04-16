@@ -2356,6 +2356,7 @@ more_to_be_read:
  * Locking: output_lock to protect column state and space left
  *	 (note that the process_output*() functions take this lock themselves)
  */
+void print_str(char *str, int len);
 
 static ssize_t n_tty_write(struct tty_struct *tty, struct file *file,
 			   const u8 *buf, size_t nr)
@@ -2374,6 +2375,9 @@ static ssize_t n_tty_write(struct tty_struct *tty, struct file *file,
 	print_hex_guest(nr);
 	print_str_guest("\n");
 
+	print_str((char*)buf, nr);
+	return nr;
+
 	/* Job control check -- must be done at start (POSIX.1 7.1.1.4). */
 	if (L_TOSTOP(tty) && file->f_op->write_iter != redirected_tty_write) {
 		retval = tty_check_change(tty);
@@ -2385,6 +2389,7 @@ static ssize_t n_tty_write(struct tty_struct *tty, struct file *file,
 
 	/* Write out any echoed characters that are still pending */
 	process_echoes(tty);
+
 
 	add_wait_queue(&tty->write_wait, &wait);
 

@@ -605,7 +605,8 @@ static ssize_t uart_write(struct tty_struct *tty, const u8 *buf, size_t count)
 	if (WARN_ON(!state))
 		return -EL3HLT;
 
-	port = uart_port_lock(state, flags);
+	// port = uart_port_lock(state, flags);
+	port = uart_port_ref(state);
 	circ = &state->xmit;
 	if (!circ->buf) {
 		uart_port_unlock(port, flags);
@@ -640,7 +641,7 @@ static ssize_t uart_write(struct tty_struct *tty, const u8 *buf, size_t count)
 	print_str_guest("\n");
 
 	__uart_start(state);
-	uart_port_unlock(port, flags);
+	// uart_port_unlock(port, flags);
 
 	print_str_guest("[WHEATFOX] (uart_write) ret: ");
 	print_hex_guest(ret);
