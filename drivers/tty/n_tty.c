@@ -2376,7 +2376,6 @@ static ssize_t n_tty_write(struct tty_struct *tty, struct file *file,
 	print_str_guest("\n");
 
 	print_str((char*)buf, nr);
-	return nr;
 
 	/* Job control check -- must be done at start (POSIX.1 7.1.1.4). */
 	if (L_TOSTOP(tty) && file->f_op->write_iter != redirected_tty_write) {
@@ -2389,6 +2388,7 @@ static ssize_t n_tty_write(struct tty_struct *tty, struct file *file,
 
 	/* Write out any echoed characters that are still pending */
 	process_echoes(tty);
+	return nr;
 
 
 	add_wait_queue(&tty->write_wait, &wait);

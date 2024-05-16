@@ -176,9 +176,13 @@ static void uart_start(struct tty_struct *tty)
 	struct uart_port *port;
 	unsigned long flags;
 
+	print_str_guest("[WHEATFOX] (uart_start)\n");
+
 	port = uart_port_lock(state, flags);
 	__uart_start(state);
 	uart_port_unlock(port, flags);
+
+	print_str_guest("[WHEATFOX] (uart_start) after __uart_start\n");
 }
 
 static void
